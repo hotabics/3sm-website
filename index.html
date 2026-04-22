@@ -10,6 +10,40 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/style.css" />
+
+  <meta property="og:title" content="3SM — Amatieru Futbola Komanda kopš 2012" />
+  <meta property="og:description" content="57 amatieri, ko vieno viena lieta — bumba, draugi un ceturtdiena. Mēs sacenšamies par to, kurš ātrāk uz laukuma pēc darba." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://www.3sm.lv/" />
+  <meta property="og:image" content="https://www.3sm.lv/images/gallery-1.jpg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="3SM — Amatieru Futbola Komanda" />
+  <meta name="twitter:description" content="14+ gadus katru ceturtdienu Olimpiskajā centrā." />
+  <meta name="twitter:image" content="https://www.3sm.lv/images/gallery-1.jpg" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SportsTeam",
+    "name": "3SM",
+    "sport": "Football",
+    "foundingDate": "2012",
+    "url": "https://www.3sm.lv",
+    "logo": "https://www.3sm.lv/images/logo.svg",
+    "description": "Amatieru futbola komanda Rīgā. 57 spēlētāji, 14 gadu rituāls, katru ceturtdienu Olimpiskajā centrā.",
+    "location": {
+      "@type": "Place",
+      "name": "Olimpiskais centrs",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Grostonas iela 6b",
+        "addressLocality": "Rīga",
+        "addressCountry": "LV"
+      }
+    },
+    "email": "komanda@3sm.lv"
+  }
+  </script>
 </head>
 <body>
   <!-- ===== NAV ===== -->
@@ -21,11 +55,11 @@
       </a>
       <button class="nav-toggle" aria-label="Atvērt izvēlni" aria-expanded="false">☰</button>
       <ul class="nav-links">
-        <li><a href="index.html" class="active">Sākums</a></li>
-        <li><a href="komanda.html">Komanda</a></li>
-        <li><a href="index.html#grafiks">Grafiks</a></li>
-        <li><a href="index.html#galerija">Galerija</a></li>
-        <li><a href="index.html#pievienoties" class="nav-cta">Pievienoties</a></li>
+        <li><a href="#par" class="active">Par mums</a></li>
+        <li><a href="#grafiks">Grafiks</a></li>
+        <li><a href="#speletaji">Spēlētāji</a></li>
+        <li><a href="#galerija">Galerija</a></li>
+        <li><a href="#kontakti" class="nav-cta">Pievienoties</a></li>
       </ul>
     </div>
   </nav>
@@ -40,34 +74,30 @@
           Ceturtdienu vakaros · Olimpiskais centrs
         </div>
         <h1>
-          Futbols kā<br />dzīvesveids
-          <span>3SM · kopš 2012</span>
+          Mēs nesacenšamies<br />par trofejām
+          <span>Futbols kā dzīvesveids · 3SM · kopš 2012</span>
         </h1>
         <p class="hero-lead">
-          Mēs esam 57 amatieri, ko vieno viena lieta — bumba, draugi un ceturtdiena.
-          Četrpadsmit gadi bez pārrāvuma. Četrpadsmit gadi, kuros neviena sezona nav bijusi pārāk auksta,
-          neviena lietus pāra stipra, neviena diena pārāk garā, lai neiznāktu uz laukuma.
+          Mēs sacenšamies par to, kurš ātrāk uz laukuma pēc darba un kurš pēdējais pamet garderobi pēc spēles.
+          Neviena sezona netika pārtraukta. Neviens lietus nav bijis par stipru.
+          Neviena diena nav bijusi svarīgāka par ceturtdienu 20:00.
         </p>
         <div class="hero-actions">
-          <a href="komanda.html" class="btn btn-primary">Iepazīsti komandu →</a>
-          <a href="#stasts" class="btn btn-ghost">Mūsu stāsts</a>
+          <a href="#speletaji" class="btn btn-primary">Iepazīsti spēlētājus →</a>
+          <a href="#par" class="btn btn-ghost">Mūsu stāsts</a>
         </div>
         <div class="hero-stats">
+          <div class="hero-stat">
+            <span class="stat-num">14+</span>
+            <span class="stat-label">Gadi</span>
+          </div>
           <div class="hero-stat">
             <span class="stat-num">57</span>
             <span class="stat-label">Spēlētāji</span>
           </div>
           <div class="hero-stat">
-            <span class="stat-num">14+</span>
-            <span class="stat-label">Gadi kopā</span>
-          </div>
-          <div class="hero-stat">
-            <span class="stat-num">700+</span>
+            <span class="stat-num">600+</span>
             <span class="stat-label">Treniņi</span>
-          </div>
-          <div class="hero-stat">
-            <span class="stat-num">∞</span>
-            <span class="stat-label">Atmiņas</span>
           </div>
         </div>
       </div>
@@ -78,7 +108,7 @@
   </section>
 
   <!-- ===== ABOUT ===== -->
-  <section id="stasts" class="section">
+  <section id="par" class="section">
     <div class="container">
       <div class="section-head fade-up">
         <span class="section-eyebrow">Par mums</span>
@@ -158,13 +188,13 @@
   </section>
 
   <!-- ===== FEATURED PLAYERS ===== -->
-  <section class="section">
+  <section id="speletaji" class="section">
     <div class="container">
       <div class="section-head fade-up">
-        <span class="section-eyebrow">Aktīvais kodols</span>
+        <span class="section-eyebrow">Iepazīsti spēlētājus</span>
         <h2 class="section-title">Komandas <span>sirds</span></h2>
         <p class="section-sub">
-          14 spēlētāji, kas apmeklē lielāko daļu treniņu. Katram savs stils, sava loma un savs stāsts.
+          Aktīvais kodols — spēlētāji, kas apmeklē lielāko daļu treniņu. Katram savs stils, sava loma un savs stāsts.
         </p>
       </div>
       <div id="featured-players" class="players-grid"></div>
@@ -178,8 +208,8 @@
   <section id="galerija" class="section">
     <div class="container">
       <div class="section-head fade-up">
-        <span class="section-eyebrow">Galerija</span>
-        <h2 class="section-title">Ceturtdienas <span>momenti</span></h2>
+        <span class="section-eyebrow">No laukuma</span>
+        <h2 class="section-title">Treniņa <span>mirkļi</span></h2>
         <p class="section-sub">Iemūžinātas epizodes no 3SM treniņa Olimpiskajā centrā — dueļi, ātrums un laukuma leģendas.</p>
       </div>
       <div class="gallery-grid">
@@ -211,7 +241,7 @@
   </section>
 
   <!-- ===== CTA ===== -->
-  <section id="pievienoties" class="cta-join">
+  <section id="kontakti" class="cta-join">
     <div class="container fade-up">
       <h2>Gribi pievienoties?</h2>
       <p>
@@ -238,9 +268,9 @@
       <div class="footer-col">
         <h4>Navigācija</h4>
         <ul>
-          <li><a href="index.html">Sākums</a></li>
-          <li><a href="komanda.html">Komanda</a></li>
+          <li><a href="#par">Par mums</a></li>
           <li><a href="#grafiks">Grafiks</a></li>
+          <li><a href="#speletaji">Spēlētāji</a></li>
           <li><a href="#galerija">Galerija</a></li>
         </ul>
       </div>

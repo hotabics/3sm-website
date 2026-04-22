@@ -52,6 +52,18 @@ function renderPlayers(containerId, limit = null, filter = "all") {
   }
   if (limit) list = list.slice(0, limit);
 
+  if (list.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state fade-up">
+        <p>Tajā pozīcijā vēl nav neviena — vai gribi kļūt par pirmo?</p>
+        <a href="index.html#kontakti" class="btn btn-ghost">Sazinies ar komandu</a>
+      </div>`;
+    requestAnimationFrame(() => {
+      container.querySelectorAll(".fade-up").forEach(el => el.classList.add("visible"));
+    });
+    return;
+  }
+
   container.innerHTML = list
     .map(
       (p, i) => `

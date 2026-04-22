@@ -9,10 +9,10 @@ const PLAYERS = [
     name: "Hugo",
     nickname: "Kapteinis",
     number: 10,
-    position: "Uzbrucējs",
-    positionShort: "UZB",
+    position: "Centra aizsargs",
+    positionShort: "AIZ",
     joinedYear: 2012,
-    tagline: "Leģenda, kas zina katru stūri laukumā.",
+    tagline: "Komandas dibinātājs un dvēsele.",
     bio: "Hugo ir viens no komandas dibinātājiem un tās nepārspētais kapteinis kopš 2012. gada. Viņa precīzās piespēles un neiztrūkstošā klātbūtne ceturtdienu treniņos ir padarījusi viņu par 3SM sirdi. Ikviens zina — ja Hugo ir laukumā, spēle notiks pareizi.",
     traits: {
       "Kāju darbs": "Abas kājas",
@@ -31,9 +31,9 @@ const PLAYERS = [
     id: "muzis",
     name: "Mūzis",
     nickname: "Mūris",
-    number: 4,
-    position: "Centra aizsargs",
-    positionShort: "AIZ",
+    number: 12,
+    position: "Vārtsargs",
+    positionShort: "VAR",
     joinedYear: 2013,
     tagline: "Neviens netiek cauri — pat ne bumba.",
     bio: "Mūzis ir mūsu aizsardzības stūrakmens. Fiziski spēcīgs, taktiski domājošs un vienmēr gatavs iemet savu ķermeni pa priekšu pretinieka tālšāvienam. Ja jautāsi komandai, kurš nozog visvairāk bumbu, atbilde vienmēr būs Mūzis.",
@@ -75,19 +75,19 @@ const PLAYERS = [
   },
   {
     id: "arturs",
-    name: "Arturs",
-    nickname: "Tehniķis",
+    name: "Artūrs",
+    nickname: "Snaiperis",
     number: 7,
-    position: "Labais malējais",
-    positionShort: "MAL",
+    position: "Uzbrucējs",
+    positionShort: "UZB",
     joinedYear: 2014,
-    tagline: "Elegance uz labās malas.",
-    bio: "Arturs ir mūsu tehniķis — katrs pieskāriens bumbai ir pārdomāts, katra piespēle precīzi adresēta. Ja redzat gracilu aizvilšanu pa malu un perfektu centrējumu, visticamāk, tas ir Arturs. Vienmēr pozitīvs un komandas dvēseles uzmundrinātājs.",
+    tagline: "Precizitāte pirmajā vietā.",
+    bio: "Artūrs ir mūsu snaiperis — katrs sitiens pārdomāts, katra piespēle precīzi adresēta. Ja vajag iesist no grūtā leņķa, bumba iet pie Artūra. Vienmēr pozitīvs un komandas dvēseles uzmundrinātājs.",
     traits: {
       "Kāju darbs": "Labā",
       "Treniņu apmeklējums": "88%",
-      "Parakstsgājiens": "Centrējums ar āru",
-      "Iemīļotais brīdis": "Perfektā centrējums Hugo"
+      "Parakstsgājiens": "Tālais šāviens stūrī",
+      "Iemīļotais brīdis": "Trīs vārti vienā treniņā"
     },
     stats: {
       "Sezonas": 12,
@@ -324,6 +324,52 @@ const PLAYERS = [
       "Vārti": 41,
       "Piespēles": 88,
       "Treniņi": 276
+    }
+  },
+  {
+    id: "davis",
+    name: "Dāvis",
+    nickname: "Skalpels",
+    number: 13,
+    position: "Centra pussargs",
+    positionShort: "PUS",
+    joinedYear: 2018,
+    tagline: "Spēles dirigents vidū.",
+    bio: "Dāvis grieš pretinieku aizsardzību kā skalpelis — vienmēr atrod to īsto piespēli starp līnijām. Viņa spēja lasīt laukuma telpu padara viņu par vienu no grūtāk aizstājamajiem spēlētājiem vidū.",
+    traits: {
+      "Kāju darbs": "Labā",
+      "Treniņu apmeklējums": "85%",
+      "Parakstsgājiens": "Piespēle starp līnijām",
+      "Iemīļotais brīdis": "Assists caur visu laukumu"
+    },
+    stats: {
+      "Sezonas": 8,
+      "Vārti": 29,
+      "Piespēles": 164,
+      "Treniņi": 328
+    }
+  },
+  {
+    id: "roberts",
+    name: "Roberts",
+    nickname: "Tanks",
+    number: 15,
+    position: "Centra aizsargs",
+    positionShort: "AIZ",
+    joinedYear: 2017,
+    tagline: "Neviena bumba netiek zaudēta bez cīņas.",
+    bio: "Roberts ir komandas tanks — fiziski nepielaužams, duelē nesarūgtīgs. Ja vajag izdabūt bumbu no pretinieka, Roberts to dara. Ja vajag izdabūt bumbu no paša Roberta, ar to būs jāpalaujas uz draudzību, ne spēku.",
+    traits: {
+      "Kāju darbs": "Labā",
+      "Treniņu apmeklējums": "90%",
+      "Parakstsgājiens": "Dubultais duelis",
+      "Iemīļotais brīdis": "Nulle zaudētu duelu pilnā treniņā"
+    },
+    stats: {
+      "Sezonas": 9,
+      "Vārti": 8,
+      "Piespēles": 64,
+      "Treniņi": 378
     }
   }
 ];
