@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="lv">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Komanda — 3SM</title>
+  <meta name="description" content="Iepazīsti 3SM aktīvās komandas spēlētājus — Hugo, Mūzi, Mārci, Arturu un citus." />
+  <link rel="icon" type="image/svg+xml" href="images/logo.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- ===== NAV ===== -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="index.html" class="nav-brand">
+        <img src="images/logo.svg" alt="3SM logo" />
+        3SM
+      </a>
+      <button class="nav-toggle" aria-label="Atvērt izvēlni" aria-expanded="false">☰</button>
+      <ul class="nav-links">
+        <li><a href="index.html">Sākums</a></li>
+        <li><a href="komanda.html" class="active">Komanda</a></li>
+        <li><a href="index.html#grafiks">Grafiks</a></li>
+        <li><a href="index.html#galerija">Galerija</a></li>
+        <li><a href="index.html#pievienoties" class="nav-cta">Pievienoties</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- ===== HEADER ===== -->
+  <section class="section" style="padding-top: 10rem;">
+    <div class="container">
+      <div class="section-head fade-up">
+        <span class="section-eyebrow">57 spēlētāji · 14 aktīvie kodolā</span>
+        <h2 class="section-title">Mūsu <span>komanda</span></h2>
+        <p class="section-sub">
+          No komandas dibinātājiem līdz jaunākajiem papildinājumiem.
+          Katram savs skaitlis, sava pozīcija un savs stāsts, ko pastāstīt.
+        </p>
+      </div>
+
+      <!-- Position filter -->
+      <div id="players-filter" class="players-filter fade-up"></div>
+
+      <!-- Players grid -->
+      <div id="all-players" class="players-grid"></div>
+    </div>
+  </section>
+
+  <!-- ===== INFO ===== -->
+  <section class="section">
+    <div class="container">
+      <div class="about-grid">
+        <div class="feature-card fade-up">
+          <div class="feature-icon">👥</div>
+          <h3>Kopējais sastāvs</h3>
+          <p>3SM kopējais dalībnieku saraksts — 57 cilvēki. Daži nāk katru ceturtdienu, citi retāk, bet visi ir mūsu.</p>
+        </div>
+        <div class="feature-card fade-up" style="transition-delay: 100ms">
+          <div class="feature-icon">⭐</div>
+          <h3>Aktīvais kodols</h3>
+          <p>14 spēlētāji, kas apmeklē vairāk nekā 80% treniņu. Viņi ir veidojuši komandas raksturu kopš 2012.</p>
+        </div>
+        <div class="feature-card fade-up" style="transition-delay: 200ms">
+          <div class="feature-icon">🎓</div>
+          <h3>Gribi kļūt par daļu?</h3>
+          <p>Mēs vienmēr priecājamies par jauniem cilvēkiem. Uzraksti mums un atnāc ciemos uz vienu no treniņiem.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="footer">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <img src="images/logo.svg" alt="3SM" />
+        <strong style="font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; letter-spacing: 0.1em;">3SM · 2012</strong>
+        <p>Amatieru futbola komanda, kura tic ceturtdienai vairāk nekā jebkurai citai nedēļas dienai.</p>
+        <div class="socials">
+          <a href="#" aria-label="Facebook">FB</a>
+          <a href="#" aria-label="Instagram">IG</a>
+          <a href="#" aria-label="YouTube">YT</a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>Navigācija</h4>
+        <ul>
+          <li><a href="index.html">Sākums</a></li>
+          <li><a href="komanda.html">Komanda</a></li>
+          <li><a href="index.html#grafiks">Grafiks</a></li>
+          <li><a href="index.html#galerija">Galerija</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Kontakti</h4>
+        <ul>
+          <li><a href="mailto:komanda@3sm.lv">komanda@3sm.lv</a></li>
+          <li>Olimpiskais centrs</li>
+          <li>Grostonas 6b, Rīga</li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Treniņi</h4>
+        <ul>
+          <li>Ceturtdienas 20:00</li>
+          <li>Visu gadu</li>
+          <li>Jauni spēlētāji ir aicināti</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div>© <span id="year"></span> 3SM. Visas tiesības aizsargātas.</div>
+      <div>Veidots ar ⚽ un kafiju</div>
+    </div>
+  </footer>
+
+  <script src="js/players.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
