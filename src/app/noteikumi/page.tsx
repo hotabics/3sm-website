@@ -25,7 +25,7 @@ export default function NoteikumiPage() {
           </p>
         </header>
 
-        <Section number="1" title="Mūža vārds ir likums">
+        <Section number="1" title="Muža vārds ir likums">
           <p>
             Mūzis ir komandas dvēsele un kapteinis ārpus laukuma. Viņš sadala
             komandas, lemj strīdīgos brīžos, fiksē sastāvu un pieņem galēnos
