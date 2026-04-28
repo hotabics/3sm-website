@@ -16,8 +16,10 @@ export function LoginForm() {
     setError(null);
     const supabase = createClient();
     const next = params.get("next") ?? "/";
-    const origin =
-      process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin;
+    // Use the current host so PKCE cookie domain matches between OAuth
+    // start and callback. NEXT_PUBLIC_APP_URL would pin redirects to one
+    // host and break flows started on aliases (3sm.lv vs *.vercel.app).
+    const origin = window.location.origin;
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
