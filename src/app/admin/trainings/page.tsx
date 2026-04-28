@@ -15,23 +15,23 @@ export default async function AdminTrainingsPage() {
     .order("date", { ascending: false })
     .limit(20);
 
-  const counts = await Promise.all(
-    (trainings ?? []).map(async (t) => {
-      const { count: confirmed } = await supabase
-        .from("registrations")
-        .select("id", { count: "exact", head: true })
-        .eq("training_id", t.id)
-        .eq("status", "confirmed");
-      const { count: queue } = await supabase
-        .from("registrations")
-        .select("id", { count: "exact", head: true })
-        .eq("training_id", t.id)
-        .eq("status", "queue");
-      return { id: t.id, confirmed: confirmed ?? 0, queue: queue ?? 0 };
-    })
-  );
+  const trainingIds = (trainings ?? []).map((t) => t.id);
+  const countsById: Record<string, { confirmed: number; queue: number }> = {};
 
-  const countsById = Object.fromEntries(counts.map((c) => [c.id, c]));
+  if (trainingIds.length > 0) {
+    const { data: regs } = await supabase
+      .from("registrations")
+      .select("training_id, status")
+      .in("training_id", trainingIds)
+      .in("status", ["confirmed", "queue"]);
+
+    for (const r of regs ?? []) {
+      const key = r.training_id as string;
+      if (!countsById[key]) countsById[key] = { confirmed: 0, queue: 0 };
+      if (r.status === "confirmed") countsById[key].confirmed++;
+      else if (r.status === "queue") countsById[key].queue++;
+    }
+  }
   const defaultDate = isoDateRiga(nextTrainingDate());
 
   return (
