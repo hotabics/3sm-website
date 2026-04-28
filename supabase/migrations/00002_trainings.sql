@@ -41,10 +41,11 @@ alter table public.registrations enable row level security;
 -- ============ trainings policies ============
 
 drop policy if exists "trainings_select_authenticated" on public.trainings;
-create policy "trainings_select_authenticated"
+drop policy if exists "trainings_select_public" on public.trainings;
+create policy "trainings_select_public"
   on public.trainings
   for select
-  to authenticated
+  to anon, authenticated
   using (true);
 
 drop policy if exists "trainings_admin_write" on public.trainings;
@@ -57,12 +58,13 @@ create policy "trainings_admin_write"
 
 -- ============ registrations policies ============
 
--- Visi autentificētie var redzēt visas reģistrācijas (lai redz, kas piesakās).
+-- Reģistrācijas redzamas publiski (cilvēki redz, kas piesakās).
 drop policy if exists "registrations_select_authenticated" on public.registrations;
-create policy "registrations_select_authenticated"
+drop policy if exists "registrations_select_public" on public.registrations;
+create policy "registrations_select_public"
   on public.registrations
   for select
-  to authenticated
+  to anon, authenticated
   using (true);
 
 -- Lietotājs var pievienot tikai sevi.

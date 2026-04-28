@@ -19,13 +19,18 @@ create table if not exists public.users (
 
 alter table public.users enable row level security;
 
--- Visi autentificētie var redzēt publisko info par citiem (saraksts utt).
+-- Publisks lasījums (vārds + avatar + komandas info), bet column-level grants
+-- aizliedz anon redzēt email/phone/whatsapp/email_alias.
 drop policy if exists "users_select_all" on public.users;
-create policy "users_select_all"
+drop policy if exists "users_select_public" on public.users;
+create policy "users_select_public"
   on public.users
   for select
-  to authenticated
+  to anon, authenticated
   using (true);
+
+revoke select on public.users from anon;
+grant select (id, name, avatar_url, player_type, fixed_team, role) on public.users to anon;
 
 -- Lietotājs var rediģēt tikai savu rindu.
 drop policy if exists "users_update_self" on public.users;
