@@ -52,12 +52,8 @@ create policy "trainings_admin_write"
   on public.trainings
   for all
   to authenticated
-  using (
-    exists (select 1 from public.users u where u.id = auth.uid() and u.role = 'admin')
-  )
-  with check (
-    exists (select 1 from public.users u where u.id = auth.uid() and u.role = 'admin')
-  );
+  using (public.is_admin())
+  with check (public.is_admin());
 
 -- ============ registrations policies ============
 
@@ -92,9 +88,5 @@ create policy "registrations_admin_all"
   on public.registrations
   for all
   to authenticated
-  using (
-    exists (select 1 from public.users u where u.id = auth.uid() and u.role = 'admin')
-  )
-  with check (
-    exists (select 1 from public.users u where u.id = auth.uid() and u.role = 'admin')
-  );
+  using (public.is_admin())
+  with check (public.is_admin());

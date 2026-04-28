@@ -40,7 +40,7 @@ create policy "results_select_approved"
   using (
     status = 'approved'
     or submitted_by = auth.uid()
-    or exists (select 1 from public.users u where u.id = auth.uid() and u.role = 'admin')
+    or public.is_admin()
   );
 
 -- Jebkurš autentificēts dalībnieks var iesniegt rezultātu treniņam, kurā piedalījies.
@@ -65,12 +65,8 @@ create policy "results_admin_update"
   on public.results
   for update
   to authenticated
-  using (
-    exists (select 1 from public.users u where u.id = auth.uid() and u.role = 'admin')
-  )
-  with check (
-    exists (select 1 from public.users u where u.id = auth.uid() and u.role = 'admin')
-  );
+  using (public.is_admin())
+  with check (public.is_admin());
 
 -- ============ notifications policies ============
 
@@ -79,9 +75,5 @@ create policy "notifications_admin_only"
   on public.notifications
   for all
   to authenticated
-  using (
-    exists (select 1 from public.users u where u.id = auth.uid() and u.role = 'admin')
-  )
-  with check (
-    exists (select 1 from public.users u where u.id = auth.uid() and u.role = 'admin')
-  );
+  using (public.is_admin())
+  with check (public.is_admin());
