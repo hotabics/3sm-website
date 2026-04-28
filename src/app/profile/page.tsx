@@ -16,7 +16,14 @@ export default async function ProfilePage() {
       <SiteHeader />
       <main className="mx-auto max-w-3xl px-6 py-10 space-y-8">
         <div>
-          <h1 className="text-3xl font-bold">{profile.name ?? "Mans profils"}</h1>
+          <h1 className="text-3xl font-bold">
+            {profile.name ?? "Mans profils"}
+            {profile.nickname && (
+              <span className="ml-3 text-2xl font-normal text-neutral-400">
+                „{profile.nickname}"
+              </span>
+            )}
+          </h1>
           <p className="mt-1 text-sm text-neutral-500">{profile.email}</p>
           <div className="mt-3 flex flex-wrap gap-2 text-xs">
             <Tag>

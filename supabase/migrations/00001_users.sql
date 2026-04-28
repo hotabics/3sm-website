@@ -4,6 +4,7 @@ create table if not exists public.users (
   id uuid primary key references auth.users(id) on delete cascade,
   email text unique not null,
   name text,
+  nickname text,
   phone text,
   whatsapp text,
   avatar_url text,
@@ -30,7 +31,7 @@ create policy "users_select_public"
   using (true);
 
 revoke select on public.users from anon;
-grant select (id, name, avatar_url, player_type, fixed_team, role) on public.users to anon;
+grant select (id, name, nickname, avatar_url, player_type, fixed_team, role) on public.users to anon;
 
 -- Lietotājs var rediģēt tikai savu rindu.
 drop policy if exists "users_update_self" on public.users;

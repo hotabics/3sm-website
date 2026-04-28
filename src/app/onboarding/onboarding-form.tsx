@@ -6,17 +6,20 @@ import { createClient } from "@/lib/supabase/client";
 
 type Props = {
   defaultName: string;
+  defaultNickname: string;
   defaultPhone: string;
   defaultWhatsapp: string;
 };
 
 export function OnboardingForm({
   defaultName,
+  defaultNickname,
   defaultPhone,
   defaultWhatsapp,
 }: Props) {
   const router = useRouter();
   const [name, setName] = useState(defaultName);
+  const [nickname, setNickname] = useState(defaultNickname);
   const [phone, setPhone] = useState(defaultPhone);
   const [whatsapp, setWhatsapp] = useState(defaultWhatsapp);
   const [sameAsPhone, setSameAsPhone] = useState(
@@ -45,6 +48,7 @@ export function OnboardingForm({
         id: user.id,
         email: user.email!,
         name: name.trim(),
+        nickname: nickname.trim() || null,
         phone: phone.trim(),
         whatsapp: sameAsPhone ? phone.trim() : whatsapp.trim(),
         avatar_url: (user.user_metadata?.avatar_url as string) ?? null,
@@ -72,6 +76,15 @@ export function OnboardingForm({
           onChange={(e) => setName(e.target.value)}
           className="input"
           placeholder="Jānis Bērziņš"
+        />
+      </Field>
+
+      <Field label="Iesauka (neobligāti)">
+        <input
+          value={nickname}
+          onChange={(e) => setNickname(e.target.value)}
+          className="input"
+          placeholder="Hugo"
         />
       </Field>
 

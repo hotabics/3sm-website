@@ -5,6 +5,7 @@ export type Profile = {
   id: string;
   email: string;
   name: string | null;
+  nickname: string | null;
   phone: string | null;
   whatsapp: string | null;
   avatar_url: string | null;
@@ -13,6 +14,14 @@ export type Profile = {
   fixed_team: "black" | "white" | "flexible" | null;
   semester_paid_until: string | null;
 };
+
+/** Iesauka, ja ir, citādi vārds. */
+export function displayName(p: {
+  name: string | null;
+  nickname: string | null;
+}): string {
+  return p.nickname?.trim() || p.name?.trim() || "—";
+}
 
 export async function getCurrentUser() {
   const supabase = await createClient();
@@ -32,7 +41,7 @@ export async function getCurrentProfile(): Promise<Profile | null> {
   const { data } = await supabase
     .from("users")
     .select(
-      "id, email, name, phone, whatsapp, avatar_url, role, player_type, fixed_team, semester_paid_until"
+      "id, email, name, nickname, phone, whatsapp, avatar_url, role, player_type, fixed_team, semester_paid_until"
     )
     .eq("id", user.id)
     .single();

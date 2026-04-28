@@ -23,6 +23,7 @@ export type RegistrationWithUser = {
   registered_at: string;
   user: {
     name: string | null;
+    nickname: string | null;
     avatar_url: string | null;
     player_type: "core" | "reserve";
     fixed_team: "black" | "white" | "flexible" | null;
@@ -74,7 +75,7 @@ export async function getRegistrationsForTraining(
     .from("registrations")
     .select(
       `id, user_id, status, team, queue_position, registered_at,
-       user:users(name, avatar_url, player_type, fixed_team)`
+       user:users(name, nickname, avatar_url, player_type, fixed_team)`
     )
     .eq("training_id", trainingId)
     .neq("status", "cancelled")

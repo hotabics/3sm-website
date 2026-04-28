@@ -25,7 +25,9 @@ export async function SiteHeader() {
               href="/profile"
               className="text-neutral-400 transition hover:text-white"
             >
-              {profile.name?.split(" ")[0] ?? "Profils"}
+              {profile.nickname?.trim() ||
+                profile.name?.split(" ")[0] ||
+                "Profils"}
             </Link>
             {profile.role === "admin" && (
               <Link

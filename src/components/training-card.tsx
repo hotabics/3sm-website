@@ -110,7 +110,9 @@ function PlayerList({
           >
             <Avatar url={r.user.avatar_url} name={r.user.name} />
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm">{r.user.name ?? "—"}</p>
+              <p className="truncate text-sm">
+                {r.user.nickname?.trim() || r.user.name || "—"}
+              </p>
               <p className="text-xs text-neutral-500">
                 {r.user.player_type === "core" ? "Pamatsastāvs" : "Rezervists"}
                 {r.team && ` · ${r.team === "black" ? "Melnā" : "Baltā"}`}
@@ -136,7 +138,7 @@ function Avatar({ url, name }: { url: string | null; name: string | null }) {
     );
   }
   const initials = (name ?? "?")
-    .split(" ")
+    .split(/\s+/)
     .map((p) => p[0])
     .filter(Boolean)
     .slice(0, 2)

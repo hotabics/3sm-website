@@ -12,7 +12,7 @@ export default async function OnboardingPage() {
 
   const { data: profile } = await supabase
     .from("users")
-    .select("name, phone, whatsapp")
+    .select("name, nickname, phone, whatsapp")
     .eq("id", user.id)
     .single();
 
@@ -26,12 +26,13 @@ export default async function OnboardingPage() {
       <div className="space-y-3 text-center">
         <h1 className="text-3xl font-bold">Sveiks 3SM!</h1>
         <p className="text-neutral-400">
-          Pirms turpini, aizpildi savu profilu — Mūzim vajag, kā ar tevi
+          Pirms turpini, aizpildi savu profilu — Muzim vajag, kā ar tevi
           sazināties pirms treniņa.
         </p>
       </div>
       <OnboardingForm
         defaultName={defaultName}
+        defaultNickname={profile?.nickname ?? ""}
         defaultPhone={profile?.phone ?? ""}
         defaultWhatsapp={profile?.whatsapp ?? ""}
       />
