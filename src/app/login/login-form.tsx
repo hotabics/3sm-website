@@ -60,7 +60,14 @@ export function LoginForm() {
       )}
 
       <p className="text-xs text-neutral-500">
-        Pieslēdzoties tu piekrīti komandas iekšējiem noteikumiem.
+        Pieslēdzoties tu piekrīti komandas{" "}
+        <a
+          href="/noteikumi"
+          className="text-[var(--color-accent)] underline-offset-2 hover:underline"
+        >
+          iekšējiem noteikumiem
+        </a>
+        .
       </p>
     </div>
   );
