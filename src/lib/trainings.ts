@@ -32,11 +32,14 @@ export type RegistrationWithUser = {
 /**
  * Atrod nākamo treniņu — vai nu šīs nedēļas ceturtdiena, vai nākamā.
  */
-export async function getNextTraining(): Promise<Training | null> {
+export async function getNextTraining(): Promise<{
+  training: Training | null;
+  error: string | null;
+}> {
   const supabase = await createClient();
   const todayRiga = isoDateRiga(new Date());
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("trainings")
     .select("*")
     .gte("date", todayRiga)
@@ -45,7 +48,12 @@ export async function getNextTraining(): Promise<Training | null> {
     .limit(1)
     .maybeSingle();
 
-  return data as Training | null;
+  if (error) {
+    console.error("[getNextTraining]", error);
+    return { training: null, error: error.message };
+  }
+
+  return { training: (data as Training) ?? null, error: null };
 }
 
 export async function getTrainingById(id: string): Promise<Training | null> {

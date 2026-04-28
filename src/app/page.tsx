@@ -8,8 +8,10 @@ import {
   getMyRegistration,
 } from "@/lib/trainings";
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
-  const [profile, training] = await Promise.all([
+  const [profile, { training, error: trainingError }] = await Promise.all([
     getCurrentProfile(),
     getNextTraining(),
   ]);
@@ -32,6 +34,11 @@ export default async function HomePage() {
     <div>
       <SiteHeader />
       <main className="mx-auto max-w-3xl px-6 py-10">
+        {trainingError && profile?.role === "admin" && (
+          <p className="mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
+            Kļūda ielādējot treniņu: {trainingError}
+          </p>
+        )}
         {!training ? (
           <EmptyState isAdmin={profile?.role === "admin"} />
         ) : (
