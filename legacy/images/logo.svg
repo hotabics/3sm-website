@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
+  <defs>
+    <linearGradient id="shield" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#b14fb1"/>
+      <stop offset="100%" stop-color="#7a2f7a"/>
+    </linearGradient>
+    <linearGradient id="text" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f3d6f3"/>
+    </linearGradient>
+  </defs>
+  <!-- Shield background -->
+  <path d="M250 50 C 180 50, 120 70, 80 90 L 80 280 C 80 380, 170 450, 250 470 C 330 450, 420 380, 420 280 L 420 90 C 380 70, 320 50, 250 50 Z"
+        fill="url(#shield)" stroke="#000" stroke-width="8"/>
+  <!-- Soccer ball -->
+  <circle cx="250" cy="60" r="38" fill="#ffffff" stroke="#000" stroke-width="4"/>
+  <polygon points="250,40 268,52 262,72 238,72 232,52" fill="#000"/>
+  <path d="M250 40 L 232 28 M 250 40 L 268 28 M 238 72 L 225 90 M 262 72 L 275 90" stroke="#000" stroke-width="3" fill="none"/>
+  <!-- 3SM text -->
+  <text x="250" y="230" font-family="Arial Black, Bebas Neue, sans-serif" font-size="130" font-weight="900"
+        text-anchor="middle" fill="url(#text)" stroke="#000" stroke-width="5" letter-spacing="-3">3SM</text>
+  <!-- Two figures silhouettes -->
+  <g fill="#000">
+    <!-- Left figure -->
+    <ellipse cx="200" cy="300" rx="10" ry="12"/>
+    <path d="M200 315 Q 185 330 187 360 L 188 410 Q 188 420 195 420 L 198 420 Q 200 420 200 410 L 200 370 Q 205 370 205 410 L 205 420 Q 208 420 210 420 Q 215 420 215 410 L 215 360 Q 218 335 215 320 Q 218 325 222 330 Q 226 335 228 330 Q 230 325 225 318 Q 218 308 213 305 Q 208 305 200 315 Z"/>
+    <path d="M185 325 Q 175 335 170 345 Q 168 350 172 352 Q 176 354 180 350 Q 185 345 188 340" stroke="#000" stroke-width="2"/>
+  </g>
+  <g fill="#000">
+    <!-- Right figure -->
+    <ellipse cx="300" cy="300" rx="10" ry="12"/>
+    <path d="M300 315 Q 285 330 287 360 L 288 410 Q 288 420 295 420 L 298 420 Q 300 420 300 410 L 300 370 Q 305 370 305 410 L 305 420 Q 308 420 310 420 Q 315 420 315 410 L 315 360 Q 318 335 315 320 Q 318 325 322 330 Q 326 335 328 330 Q 330 325 325 318 Q 318 308 313 305 Q 308 305 300 315 Z"/>
+    <path d="M315 325 Q 325 335 330 345 Q 332 350 328 352 Q 324 354 320 350 Q 315 345 312 340" stroke="#000" stroke-width="2"/>
+  </g>
+  <!-- 2012 year -->
+  <text x="250" y="445" font-family="Arial, sans-serif" font-size="32" font-weight="900"
+        text-anchor="middle" fill="#ffffff" letter-spacing="3">2012</text>
+</svg>

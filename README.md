@@ -1,71 +1,71 @@
-# 3SM — Amatieru Futbola Komanda
+# 3SM — komandas aplikācija
 
-Mājaslapa komandai 3SM, kas spēlē amatieru futbolu kopš 2012. gada.
-Domēns: [https://www.3sm.lv](https://www.3sm.lv)
+Next.js 15 + Supabase aplikācija amatieru futbola komandai 3SM. Aizvieto iepriekšējo statisko mājas lapu (saglabāta `legacy/`).
+
+## Statuss
+
+- Fāze 1 — Next.js + Tailwind + Supabase + Google OAuth + onboarding ✅
+- Fāze 2 — treniņa karte, pieteikšanās/atcelšana, admin panelis, sastāva fiksēšanas cron ✅
+- **Fāze 3 (komandas + statistika)** — drag-and-drop sadalītājs, rezultātu ievade un apstiprināšana, statistika ← šobrīd
+- Fāze 4 — Stripe maksājumi
+- Fāze 5 — WhatsApp paziņojumi (Twilio)
+- Fāze 6 — `@3sm.lv` e-pasti (Hostinger)
+
+## Sākt darbu lokāli
+
+```bash
+npm install
+cp .env.local.example .env.local
+# aizpildi Supabase + Google OAuth atslēgas
+npm run dev
+```
+
+## Supabase setup
+
+1. **Izveido projektu** [supabase.com/dashboard](https://supabase.com/dashboard) (region: West EU).
+2. **Project Settings → API** → kopē `URL`, `anon` un `service_role` atslēgas → `.env.local`.
+3. **Authentication → Providers → Google** — ieslēdz, ievieto Google OAuth Client ID + Secret.
+   - Google Cloud Console → APIs & Services → Credentials → OAuth 2.0 Client.
+   - Authorized redirect URI: `https://<project-ref>.supabase.co/auth/v1/callback`.
+4. **SQL Editor** → palaid pēc kārtas:
+   - `supabase/migrations/00001_users.sql`
+   - `supabase/migrations/00002_trainings.sql`
+   - `supabase/migrations/00003_results.sql`
+5. Lai izveidotu administratora kontu pēc pirmā logina:
+   ```sql
+   update public.users set role = 'admin' where email = 'ivo.capins@gmail.com';
+   ```
+
+## Cron (Vercel)
+
+`vercel.json` konfigurē sastāva fiksēšanu katru ceturtdienu plkst. 14:00 un 15:00 UTC (sedz 17:00 Rīgas laiku gan vasaras, gan ziemas joslā). Cron endpoint pārbauda `Authorization: Bearer ${CRON_SECRET}` — uzstādi `CRON_SECRET` Vercel project env un `.env.local`.
 
 ## Struktūra
 
 ```
-3sm-website/
-├── index.html             # Sākumlapa (hero, par komandu, grafiks, galerija)
-├── komanda.html           # Visi spēlētāji ar pozīciju filtru
-├── spelētājs.html         # Dinamiskais profils (?id=hugo, ?id=muzis, ...)
-├── css/style.css          # Brand stils (violets / melns, Bebas Neue + Inter)
-├── js/
-│   ├── players.js         # 14 aktīvo spēlētāju datu bāze
-│   └── main.js            # Navigācija, renderēšana, animācijas
-└── images/
-    └── logo.svg           # 3SM ģerbonis (ievietots arī kā favicon)
+src/
+  app/
+    page.tsx                       # / — nākamā treniņa karte
+    login/                         # /login (Google OAuth + Suspense)
+    onboarding/                    # /onboarding (vārds, telefons, WhatsApp)
+    auth/callback/route.ts         # OAuth redirect
+    admin/trainings/               # admin: izveidot, sastāvs, atcelt
+    actions/
+      registrations.ts             # piesakās / atceļ
+      admin.ts                     # izveidot treniņu, apstiprināt, atcelt
+    api/cron/close-registration/   # ceturtdiena 17:00 → fiksē sastāvu
+  components/
+    site-header.tsx
+    training-card.tsx
+    register-button.tsx
+    sign-out-button.tsx
+  lib/
+    auth.ts                        # getCurrentProfile, requireAdmin
+    time.ts                        # Europe/Riga TZ helpers
+    trainings.ts                   # treniņu queries
+    supabase/{client,server,middleware,admin}.ts
+  middleware.ts
+supabase/migrations/               # 00001_users, 00002_trainings
+legacy/                            # iepriekšējā statiskā mājas lapa
+vercel.json                        # cron schedule
 ```
-
-## Darbība
-
-Atveram `index.html` jebkurā moderniā pārlūkā — nav nepieciešams build solis.
-
-Deploy: augšupielādē visu mapes saturu uz `3sm.lv` hostingu (statiska vietne).
-
-## Spēlētāju profili
-
-Katram aktīvās komandas spēlētājam ir sava profila lapa:
-
-- [Hugo](spelētājs.html?id=hugo) — #10, Uzbrucējs, Kapteinis
-- [Mūzis](spelētājs.html?id=muzis) — #4, Centra aizsargs
-- [Mārcis](spelētājs.html?id=marcis) — #8, Centra pussargs
-- [Arturs](spelētājs.html?id=arturs) — #7, Labais malējais
-- [Artis](spelētājs.html?id=artis) — #2, Labais aizsargs
-- [Ints](spelētājs.html?id=ints) — #9, Uzbrucējs
-- [Ivo](spelētājs.html?id=ivo) — #6, Defensīvs pussargs
-- [Guntis](spelētājs.html?id=guntis) — #5, Centra aizsargs
-- [Oliņš](spelētājs.html?id=olins) — #3, Kreisais aizsargs
-- [Pēteris](spelētājs.html?id=peteris) — #1, Vārtsargs
-- [Niks](spelētājs.html?id=niks) — #11, Kreisais malējais
-- [Vents](spelētājs.html?id=vents) — #14, Ofensīvs pussargs
-- [Zach](spelētājs.html?id=zach) — #17, Uzbrucējs
-- [Piparmētra](spelētājs.html?id=piparmetra) — #21, Universāls
-
-## Nākamie soļi
-
-1. **Aizvietot galerijas placeholderus** ar īstajām bildēm no treniņa
-   ([failiem.lv/u/hh95g65vrt](https://failiem.lv/u/hh95g65vrt)) — mape `images/gallery/`.
-2. **Pievienot spēlētāju fotogrāfijas** — katram spēlētājam `images/players/{id}.jpg`,
-   tad `js/main.js` `renderPlayers()` nomainīt `.player-silhouette` uz `<img>` tagu.
-3. **Papildināt** `js/players.js` ar atlikušajiem 43 dalībniekiem, ja vajag
-   viņus redzēt komandas lapā.
-4. **Sociālo tīklu linki** — footerī `socials` sadaļa.
-5. **Kontaktforma** — sākotnēji `mailto:komanda@3sm.lv`, vēlāk var
-   pievienot Netlify Forms vai līdzīgu.
-
-## Dizaina pieejas atsauces
-
-Analizētas amatieru sporta mājaslapas: Hackney Marshes Football League,
-Sunday League Clubs (UK), LSFL amatieru klubi, kā arī profesionālo
-klubu jauniešu akadēmijas. Galvenie novērojumi:
-
-- Kopienas ziņojums > individuālā slava
-- Skaidrs treniņu grafiks hero sekcijā
-- Spēlētāju profili ar iesaukām, nevis tikai faktiem
-- Uzaicinājums pievienoties viegli atrodams
-- Foto dominē pār tekstu
-
-Šī lapa to pielāgo 3SM kontekstam — iekļauts komandas stāsts, ceturtdienas
-rituāls, Olimpiskais centrs kā otrās mājas un 57 dalībnieku kopiena.
