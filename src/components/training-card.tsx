@@ -3,6 +3,7 @@ import { formatRiga } from "@/lib/time";
 import type { Training, RegistrationWithUser } from "@/lib/trainings";
 import type { Profile } from "@/lib/auth";
 import { RegisterButton } from "./register-button";
+import { Jersey } from "./jersey";
 
 type Props = {
   training: Training;
@@ -59,6 +60,8 @@ export function TrainingCard({ training, registrations, profile, myStatus }: Pro
         )}
       </div>
 
+      <TeamPreview confirmed={confirmed} />
+
       <PlayerList title="Apstiprināti" players={confirmed} />
       {queue.length > 0 && <PlayerList title="Rindā" players={queue} />}
     </article>
@@ -77,6 +80,58 @@ function Status({ training }: { training: Training }) {
     <span className={`rounded-full px-3 py-1 text-xs font-medium ${s.className}`}>
       {s.label}
     </span>
+  );
+}
+
+function TeamPreview({ confirmed }: { confirmed: RegistrationWithUser[] }) {
+  // Provizoriskā komandu saspēle: skaita aktuālo `team`, vai, ja vēl nav,
+  // spēlētāja `fixed_team`. Elastīgos skaita atsevišķi.
+  let black = 0;
+  let white = 0;
+  let flex = 0;
+  for (const r of confirmed) {
+    const t = r.team ?? r.user.fixed_team;
+    if (t === "black") black++;
+    else if (t === "white") white++;
+    else flex++;
+  }
+  if (black === 0 && white === 0 && flex === 0) return null;
+
+  return (
+    <div className="mt-6 grid grid-cols-3 gap-3 rounded-xl border border-neutral-900 bg-neutral-950 p-3">
+      <TeamSlot team="black" count={black} label="Melnā" />
+      <div className="flex flex-col items-center justify-center text-xs text-neutral-500">
+        <span>Elastīgi</span>
+        <span className="text-lg font-bold text-neutral-300">{flex}</span>
+      </div>
+      <TeamSlot team="white" count={white} label="Baltā" />
+    </div>
+  );
+}
+
+function TeamSlot({
+  team,
+  count,
+  label,
+}: {
+  team: "black" | "white";
+  count: number;
+  label: string;
+}) {
+  return (
+    <div
+      className={`flex items-center gap-2 rounded-lg p-2 ${
+        team === "black" ? "bg-black" : "bg-neutral-100/5"
+      }`}
+    >
+      <Jersey team={team} size={32} />
+      <div className="leading-tight">
+        <div className="text-xs uppercase tracking-widest text-neutral-400">
+          {label}
+        </div>
+        <div className="text-2xl font-bold">{count}</div>
+      </div>
+    </div>
   );
 }
 
@@ -118,6 +173,7 @@ function PlayerList({
                 {r.team && ` · ${r.team === "black" ? "Melnā" : "Baltā"}`}
               </p>
             </div>
+            <Jersey team={r.team ?? r.user.fixed_team} />
           </li>
         ))}
       </ul>
