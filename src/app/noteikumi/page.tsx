@@ -16,122 +16,156 @@ export default function NoteikumiPage() {
             Komandas iekšējie noteikumi
           </p>
           <h1 className="mt-2 text-4xl font-bold tracking-tight">
-            Spēlē pagalma futbolu, klausi Mūzim.
+            Spēlē 3SM futbolu. Esam atvērti un draudzīgi. Un galvenais —
+            spēlējam godīgi.
           </h1>
           <p className="mt-3 text-neutral-400">
-            3SM ir amatieru komanda, ne čempionāts. Šie noteikumi nav juridisks
-            dokuments — tie ir kopējais saprāts, kas mums ļauj jau vairāk nekā
-            desmit gadus tikties ceturtdienas vakaros bez liekas drāmas.
+            3SM ir amatieru komanda, nevis tā slavenā komanda no Anglijas
+            premjerlīgas. Šie noteikumi nav juridisks dokuments — tas ir
+            veselais saprāts + laba atmosfēra, kas mums jau vairāk nekā 12
+            gadus ļauj katru ceturtdienu satikties bez liekas drāmas.
           </p>
         </header>
 
-        <Section number="1" title="Muža vārds ir likums">
+        <Section number="1" title="Mūža vārds ir likums">
           <p>
-            Mūzis ir komandas dvēsele un kapteinis ārpus laukuma. Viņš sadala
-            komandas, lemj strīdīgos brīžos, fiksē sastāvu un pieņem galēnos
-            lēmumus par treniņa norisi.
+            Mūzis ir komandas dvēsele un kapteinis ārpus laukuma. Viņš:
           </p>
+          <ul className="list-disc space-y-1.5 pl-5 marker:text-[var(--color-accent)]">
+            <li>sadala komandas,</li>
+            <li>izlemj strīdīgās situācijas,</li>
+            <li>fiksē sastāvu,</li>
+            <li>pieņem galīgos lēmumus par treniņa norisi.</li>
+          </ul>
           <p>
-            Ja kaut kas neskaidrs — pajautā Mūzim. Ja kaut kas šķiet netaisni —
-            pajautā Mūzim. Ja Mūzis ir nolēmis — tas tā arī ir.
+            Ja kaut kas nav skaidrs — pajautā Mūzim.
+            <br />
+            Ja kaut kas šķiet netaisnīgi — pajautā Mūzim.
+            <br />
+            Ja Mūzis ir nolēmis — tad tā arī ir.
+          </p>
+          <p className="text-neutral-500">
+            (Jā, sistēma ir vienkārša. Tieši tāpēc tā strādā.)
           </p>
         </Section>
 
-        <Section number="2" title="Pagalma futbola noteikumi">
+        <Section number="2" title="Pagalma 3SM futbola noteikumi">
           <p>
-            Mēs spēlējam pagalma futbolu — vienkārši, godīgi, bez liekiem
-            tehnikalitātēm. Konkrēti:
+            Mēs spēlējam pagalma futbolu — vienkārši, godīgi un bez liekām
+            sarežģītībām.
           </p>
           <ul className="list-disc space-y-1.5 pl-5 marker:text-[var(--color-accent)]">
-            <li>Nav vārtsarga ārpus soda laukuma kvadrāta.</li>
-            <li>Nav <em>offside</em> — spēlē kā gadās.</li>
             <li>
-              Nav slide-tackles, gružu un kaut ko, kas var radīt traumu — mēs
-              visi rīt ejam uz darbu.
+              Nav vārtsarga ārpus soda laukuma kvadrāta. Kvadrāts gan arī nav,
+              bet iedomājamies, ka tas ir.
             </li>
-            <li>Bumbu ārā — iemet ar rokām vai iesper no sāna. Neviens
-              neskatās uz pasaules futbola standartiem.</li>
-            <li>Soda situācijas izvērtē uz vietas, nepieciešamības gadījumā
-              jautā Mūzim.</li>
-            <li>Nav VAR. Nav video atkārtojumu. Spēles laikā nav tiesnešu strīdu.</li>
+            <li>
+              Nav <em>offside</em> — spēlējam, kā sanāk.
+            </li>
+            <li>
+              Nav slīdošo izklupienu un citu bīstamu gājienu — mēs visi rīt
+              ejam uz darbu.
+            </li>
+            <li>
+              Ja bumba ārā — iesper no malas. FIFA šeit neskaita punktus.
+            </li>
+            <li>
+              Soda situācijas risinām uz vietas. Ja šaubas — skat. §1 (Mūzis).
+            </li>
+            <li>
+              Nav VAR, nav video atkārtojumu, nav strīdu par “varēja būt”.
+            </li>
           </ul>
+          <p className="font-medium text-neutral-200">
+            Fair play &gt; uzvara. Vienmēr.
+          </p>
         </Section>
 
         <Section number="3" title="Pieteikšanās un atcelšana">
           <p>
-            Treniņš notiek katru ceturtdienu plkst. 20:00–21:30. Reģistrācija
-            notiek šajā lapā un slēgtā ceturtdienas dienā plkst. 17:00 — pēc
-            tam sastāvu vairs nemaina.
+            <strong>Treniņš:</strong> katru ceturtdienu 20:00–21:30
+            <br />
+            <strong>Reģistrācija:</strong> līdz 17:00 tajā pašā dienā
           </p>
           <ul className="list-disc space-y-1.5 pl-5 marker:text-[var(--color-accent)]">
             <li>
-              Pamatsastāvs ar derīgu sezonas maksājumu reģistrējas uzreiz.
+              Pamatsastāvs ar aktīvu sezonas maksājumu piesakās uzreiz.
             </li>
             <li>
-              Rezervisti reģistrējas rindā un apmaksā 8 EUR par treniņu — vai
-              ar karti, vai pārskaitot uz Swedbank.
+              Rezervisti piesakās rindā un maksā 8 € (karte vai pārskaitījums
+              uz Swedbank).
             </li>
+            <li>Vari atcelt līdz 17:00.</li>
+            <li>Ja treniņš atcelts — nauda tiek atgriezta.</li>
             <li>
-              Atcelt vari līdz pl. 17:00. Ja samaksāji un treniņš atcelts —
-              nauda atgriežas. Ja samaksāji un nepiedalies bez paziņošanas —
-              nauda paliek komandai.
+              Ja nepaziņo un neierodies — nauda paliek komandai (kā neliels
+              sods par “ghostingu”).
             </li>
           </ul>
         </Section>
 
         <Section number="4" title="Cieņa, drošība, kopiena">
           <p>
-            Mēs spēlējam, lai izlādētos pēc darba, nevis lai uzvarētu par katru
-            cenu. Tāpēc:
+            Mēs spēlējam, lai atslēgtos no darba, nevis lai pierādītu, kurš ir
+            nākamais Messi.
           </p>
           <ul className="list-disc space-y-1.5 pl-5 marker:text-[var(--color-accent)]">
+            <li>Pretinieks = tavējais (nākamnedēļ var būt tavā komandā).</li>
             <li>
-              Pret pretinieku komandu izturamies kā pret savējiem — nākamajā
-              nedēļā varbūt ar viņiem būsi vienā kvadrātā.
+              WhatsApp grupa = futbolam un loģistikai (ne dzīves filozofijai).
             </li>
             <li>
-              Komandas grupas WhatsApp ir spēlei un loģistikai, ne pārējām
-              tēmām.
+              Ja kāds gūst traumu — spēle apstājas, palīdzam, vajadzības
+              gadījumā saucam palīdzību.
             </li>
             <li>
-              Trauma uz laukuma — apstājamies, palīdzam, vajadzības gadījumā
-              izsaucam ātro.
+              Pēc spēles — rokas spiediens, smaids, varbūt bilde. Strīdus
+              atstājam laukumā.
             </li>
             <li>
-              Pēc treniņa — handshakes, kopējais foto vai bumbas iemešana
-              somā. Bez bezspēka strīdiem.
+              Melnie parasti brauc iedzert kādu alu, ja kas baltie var
+              pievienoties.
             </li>
           </ul>
         </Section>
 
         <Section number="5" title="Komandu sadalījums">
           <p>
-            Mūzis sadala spēlētājus Melnajā un Baltajā komandā pēc tam, kad
-            sastāvs ir fiksēts. Pamatsastāva spēlētāji ar piesaistītu komandu
-            paliek savā krāsā, pārējie tiek sadalīti, lai komandas būtu
-            līdzvērtīgas.
+            Mūzis sadala spēlētājus Melnajā un Baltajā komandā pēc sastāva
+            noslēgšanas.
           </p>
+          <ul className="list-disc space-y-1.5 pl-5 marker:text-[var(--color-accent)]">
+            <li>Spēlētāji ar “savu” komandu paliek tajā.</li>
+            <li>
+              Pārējie tiek sadalīti, lai spēle būtu līdzīga un interesanta.
+            </li>
+          </ul>
           <p>
-            Ja tev nepatīk, kurā komandā šovakar esi — tu zini, ar ko runāt.
-            (Jā: ar Mūzi.)
+            Ja nepatīk komanda…
+            <br />
+            Tu jau zini, pie kā iet. (Jā — pie Mūža.)
           </p>
         </Section>
 
-        <Section number="6" title="Šie noteikumi un pats svarīgākais">
-          <p>
-            Visi šie punkti var tikt mainīti. Tas, kas nemainās, ir pirmais —
-            klausi Mūzim un spēlē pagalma futbolu.
-          </p>
-          <p className="text-neutral-500">
-            Ja tev liekas, ka šeit kaut kas pietrūkst, vai gribi piedāvāt
-            izmaiņas — pasaki Mūzim, un mēs apspriedīsim treniņa pauzē.
+        <Section number="6" title="Noteikumi un pats svarīgākais">
+          <p>Šos noteikumus var mainīt.</p>
+          <p>Tas, kas nemainās:</p>
+          <ul className="space-y-1.5 pl-1 text-neutral-200">
+            <li>👉 klausi Mūzim</li>
+            <li>👉 spēlē godīgi</li>
+            <li>👉 izbaudi spēli</li>
+          </ul>
+          <p className="text-neutral-400">
+            Ja ir idejas vai ierosinājumi — saki Mūzim. Apspriedīsim pauzē.
           </p>
         </Section>
 
         <footer className="border-t border-neutral-900 pt-8 text-sm text-neutral-500">
           <p>
-            Pieslēdzoties caur lapu tu apliecini, ka esi izlasījis un piekrīti
+            Piesakoties tu apliecini, ka esi izlasījis, sapratis un piekrīti
             šiem noteikumiem.
+            <br />
+            Un jā — arī fair play daļai 😉
           </p>
           <Link
             href="/"
