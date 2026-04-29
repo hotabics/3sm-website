@@ -40,7 +40,17 @@ export async function POST(request: Request) {
       const trainingId = session.metadata?.training_id;
       if (!paymentId || !userId || !trainingId) break;
 
-      // Atjaunot maksājuma statusu
+      // Idempotency: ja maksājums jau atzīmēts kā paid, šis ir atkārtots
+      // event delivery — neko nedarām.
+      const { data: existingPayment } = await admin
+        .from("payments")
+        .select("id, status")
+        .eq("id", paymentId)
+        .maybeSingle();
+      if (!existingPayment || existingPayment.status === "paid") {
+        break;
+      }
+
       await admin
         .from("payments")
         .update({
@@ -51,15 +61,15 @@ export async function POST(request: Request) {
               ? session.payment_intent
               : session.payment_intent?.id ?? null,
         })
-        .eq("id", paymentId);
+        .eq("id", paymentId)
+        .eq("status", "pending"); // tikai no pending → paid (race-safe)
 
-      // Reģistrēt, ja vēl nav
+      // Reģistrē, ja vēl nav (training_id + user_id ir UNIQUE).
       const { data: existing } = await admin
         .from("registrations")
         .select("id, status")
         .eq("training_id", trainingId)
         .eq("user_id", userId)
-        .neq("status", "cancelled")
         .maybeSingle();
 
       if (!existing) {
@@ -69,10 +79,15 @@ export async function POST(request: Request) {
           status: "queue",
           payment_id: paymentId,
         });
-      } else if (!existing.status || existing.status === "cancelled") {
+      } else if (existing.status === "cancelled") {
         await admin
           .from("registrations")
-          .update({ status: "queue", payment_id: paymentId })
+          .update({
+            status: "queue",
+            payment_id: paymentId,
+            cancelled_at: null,
+            registered_at: new Date().toISOString(),
+          })
           .eq("id", existing.id);
       }
       break;

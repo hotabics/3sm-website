@@ -1,15 +1,37 @@
 "use client";
 
 import { useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 export function LoginForm() {
+  const router = useRouter();
   const params = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(
     params.get("error") ? "Pieslēgšanās neizdevās. Mēģini vēlreiz." : null
   );
+  const [showEmail, setShowEmail] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  async function signInEmail(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+      return;
+    }
+    router.replace(params.get("next") ?? "/");
+    router.refresh();
+  }
 
   async function signIn() {
     setLoading(true);
@@ -69,6 +91,46 @@ export function LoginForm() {
         </a>
         .
       </p>
+
+      <div className="border-t border-neutral-900 pt-4 text-left">
+        {!showEmail ? (
+          <button
+            type="button"
+            onClick={() => setShowEmail(true)}
+            className="text-xs text-neutral-500 hover:text-neutral-300"
+          >
+            Pieslēgties ar e-pastu (testēšanai)
+          </button>
+        ) : (
+          <form onSubmit={signInEmail} className="space-y-2">
+            <input
+              type="email"
+              required
+              autoComplete="email"
+              placeholder="E-pasts"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2 text-sm"
+            />
+            <input
+              type="password"
+              required
+              autoComplete="current-password"
+              placeholder="Parole"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full rounded-lg border border-neutral-800 bg-neutral-900 px-3 py-2 text-sm"
+            />
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-lg border border-neutral-700 px-4 py-2 text-sm text-neutral-300 hover:bg-neutral-900 disabled:opacity-50"
+            >
+              {loading ? "..." : "Pieslēgties"}
+            </button>
+          </form>
+        )}
+      </div>
     </div>
   );
 }

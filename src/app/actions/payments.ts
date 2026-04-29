@@ -1,11 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripe, SINGLE_TRAINING_PRICE_CENTS } from "@/lib/stripe";
 import { formatRiga } from "@/lib/time";
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type Result =
   | { ok: true; checkoutUrl?: string }
@@ -25,6 +26,13 @@ export async function startReservePayment(
   trainingId: string,
   method: "stripe" | "manual_swedbank"
 ): Promise<Result> {
+  if (typeof trainingId !== "string" || !UUID_RE.test(trainingId)) {
+    return { ok: false, error: "Nederīgs treniņa ID." };
+  }
+  if (method !== "stripe" && method !== "manual_swedbank") {
+    return { ok: false, error: "Nederīga maksāšanas metode." };
+  }
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -93,13 +101,10 @@ export async function startReservePayment(
     return { ok: true };
   }
 
-  // Stripe Checkout
+  // Stripe Checkout — origin tikai no env (nedrīkst trustot Origin header,
+  // kuru klients var iestatīt uz savu phishing-domēnu).
   const stripe = getStripe();
-  const headerList = await headers();
-  const origin =
-    headerList.get("origin") ??
-    process.env.NEXT_PUBLIC_APP_URL ??
-    "https://3sm.lv";
+  const origin = process.env.NEXT_PUBLIC_APP_URL ?? "https://3sm.lv";
 
   const dateLabel = formatRiga(training.date + "T20:00:00Z", "EEEE, d. MMMM");
 

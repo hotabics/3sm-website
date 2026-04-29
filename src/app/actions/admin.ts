@@ -7,6 +7,12 @@ import { requireAdmin } from "@/lib/auth";
 
 type Result = { ok: true } | { ok: false; error: string };
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function badId(): Result {
+  return { ok: false, error: "Nederīgs ID." };
+}
+
 export async function createTraining(formData: FormData): Promise<Result> {
   await requireAdmin();
   const supabase = await createClient();
@@ -37,10 +43,14 @@ export async function approveRegistration(
   registrationId: string
 ): Promise<Result> {
   await requireAdmin();
+  if (!UUID_RE.test(registrationId)) return badId();
   const supabase = await createClient();
   const { error } = await supabase
     .from("registrations")
-    .update({ status: "confirmed" })
+    .update({
+      status: "confirmed",
+      cancelled_at: null,
+    })
     .eq("id", registrationId);
   if (error) return { ok: false, error: error.message };
   revalidatePath("/admin/trainings", "layout");
@@ -51,13 +61,49 @@ export async function removeRegistration(
   registrationId: string
 ): Promise<Result> {
   await requireAdmin();
+  if (!UUID_RE.test(registrationId)) return badId();
+
   const supabase = await createClient();
+
+  // Refund saistīto Stripe maksājumu, ja tāds bijis paid.
+  const { data: reg } = await supabase
+    .from("registrations")
+    .select("payment_id, payment:payments(id, provider, status, stripe_payment_intent_id)")
+    .eq("id", registrationId)
+    .maybeSingle();
+
+  type PayInfo = {
+    id: string;
+    provider: "stripe" | "manual_swedbank";
+    status: "pending" | "paid" | "failed" | "refunded";
+    stripe_payment_intent_id: string | null;
+  };
+  const pay = (reg?.payment ?? null) as PayInfo | null;
+
+  if (pay && pay.status === "paid") {
+    if (pay.provider === "stripe" && pay.stripe_payment_intent_id) {
+      try {
+        const { getStripe } = await import("@/lib/stripe");
+        await getStripe().refunds.create({
+          payment_intent: pay.stripe_payment_intent_id,
+        });
+      } catch (e) {
+        console.error("[refund] failed for", pay.id, e);
+      }
+    }
+    await supabase
+      .from("payments")
+      .update({ status: "refunded", refunded_at: new Date().toISOString() })
+      .eq("id", pay.id);
+  }
+
   const { error } = await supabase
     .from("registrations")
     .update({ status: "cancelled", cancelled_at: new Date().toISOString() })
     .eq("id", registrationId);
   if (error) return { ok: false, error: error.message };
   revalidatePath("/admin/trainings", "layout");
+  revalidatePath("/admin/payments");
   return { ok: true };
 }
 
@@ -69,6 +115,10 @@ export async function setTeam(
   team: "black" | "white" | null
 ): Promise<Result> {
   await requireAdmin();
+  if (!UUID_RE.test(registrationId)) return badId();
+  if (team !== null && team !== "black" && team !== "white") {
+    return { ok: false, error: "Nederīga komanda." };
+  }
   const supabase = await createClient();
   const { error } = await supabase
     .from("registrations")
@@ -81,6 +131,7 @@ export async function setTeam(
 
 export async function approveResult(resultId: string): Promise<Result> {
   await requireAdmin();
+  if (!UUID_RE.test(resultId)) return badId();
   const supabase = await createClient();
   const {
     data: { user },
@@ -124,6 +175,17 @@ export async function updateResult(
   whiteScore: number
 ): Promise<Result> {
   await requireAdmin();
+  if (!UUID_RE.test(resultId)) return badId();
+  if (
+    !Number.isInteger(blackScore) ||
+    blackScore < 0 ||
+    blackScore > 99 ||
+    !Number.isInteger(whiteScore) ||
+    whiteScore < 0 ||
+    whiteScore > 99
+  ) {
+    return { ok: false, error: "Nederīgi rezultāti." };
+  }
   const supabase = await createClient();
   const { error } = await supabase
     .from("results")
@@ -134,11 +196,97 @@ export async function updateResult(
   return { ok: true };
 }
 
+// =============================================================
+// Admin: lietotāju pārvaldība (loma, statuss, fiksētā komanda)
+// =============================================================
+
+const ROLES = ["player", "admin"] as const;
+const PLAYER_TYPES = ["core", "reserve"] as const;
+const FIXED_TEAMS = ["black", "white", "flexible"] as const;
+
+export async function setUserRole(
+  userId: string,
+  role: "player" | "admin"
+): Promise<Result> {
+  const me = await requireAdmin();
+  if (!UUID_RE.test(userId)) return badId();
+  if (!ROLES.includes(role)) return { ok: false, error: "Nederīga loma." };
+
+  // Drošības "guard": admin nedrīkst sevi atroles izņemt no admin —
+  // pretējā gadījumā varam palikt bez admin'a.
+  if (userId === me.id && role !== "admin") {
+    return { ok: false, error: "Sev admin lomu nevar atņemt." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("users")
+    .update({ role })
+    .eq("id", userId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/admin/users");
+  return { ok: true };
+}
+
+export async function setUserPlayerType(
+  userId: string,
+  type: "core" | "reserve"
+): Promise<Result> {
+  await requireAdmin();
+  if (!UUID_RE.test(userId)) return badId();
+  if (!PLAYER_TYPES.includes(type)) {
+    return { ok: false, error: "Nederīgs statuss." };
+  }
+
+  const supabase = await createClient();
+  const update: Record<string, unknown> = { player_type: type };
+  // Promote → core: ja sezonas maksa nokavēta, dod gadu derīgu.
+  if (type === "core") {
+    const { data: u } = await supabase
+      .from("users")
+      .select("semester_paid_until")
+      .eq("id", userId)
+      .single();
+    const today = new Date().toISOString().slice(0, 10);
+    if (!u?.semester_paid_until || u.semester_paid_until < today) {
+      update.semester_paid_until = "2026-12-31";
+    }
+  }
+
+  const { error } = await supabase.from("users").update(update).eq("id", userId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/admin/users");
+  revalidatePath("/admin/trainings", "layout");
+  return { ok: true };
+}
+
+export async function setUserFixedTeam(
+  userId: string,
+  team: "black" | "white" | "flexible" | null
+): Promise<Result> {
+  await requireAdmin();
+  if (!UUID_RE.test(userId)) return badId();
+  if (team !== null && !FIXED_TEAMS.includes(team)) {
+    return { ok: false, error: "Nederīga komanda." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("users")
+    .update({ fixed_team: team })
+    .eq("id", userId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/admin/users");
+  revalidatePath("/admin/trainings", "layout");
+  return { ok: true };
+}
+
 /**
  * Atzīmē manuālu Swedbank pārskaitījumu kā samaksātu.
  */
 export async function markPaymentPaid(paymentId: string): Promise<Result> {
   await requireAdmin();
+  if (!UUID_RE.test(paymentId)) return badId();
   const supabase = await createClient();
   const { error } = await supabase
     .from("payments")
@@ -152,6 +300,7 @@ export async function markPaymentPaid(paymentId: string): Promise<Result> {
 
 export async function rejectPayment(paymentId: string): Promise<Result> {
   await requireAdmin();
+  if (!UUID_RE.test(paymentId)) return badId();
   const supabase = await createClient();
   // Atzīmē kā failed un atceļ saistīto reģistrāciju, ja tāda ir.
   const { error: payErr } = await supabase
@@ -173,6 +322,7 @@ export async function rejectPayment(paymentId: string): Promise<Result> {
 
 export async function cancelTraining(trainingId: string): Promise<Result> {
   await requireAdmin();
+  if (!UUID_RE.test(trainingId)) return badId();
   const supabase = await createClient();
 
   const { error } = await supabase

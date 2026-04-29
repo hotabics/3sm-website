@@ -169,7 +169,7 @@ function PaymentChoice({
         className="w-full max-w-md rounded-2xl border border-neutral-800 bg-neutral-950 p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="text-xl font-bold">Maksā 8 EUR par treniņu</h3>
+        <h3 className="text-xl font-bold">Maksā 8.50 EUR par treniņu</h3>
         <p className="mt-2 text-sm text-neutral-400">
           Kā rezervists vai pamatsastāva spēlētājs ar nokavētu sezonas maksu —
           šis treniņš jāapmaksā atsevišķi. Izvēlies veidu:
@@ -195,7 +195,7 @@ function PaymentChoice({
         ) : (
           <div className="mt-5 space-y-3 text-sm text-neutral-300">
             <p>
-              Pārskaiti <strong>8.00 EUR</strong> ar piezīmi:
+              Pārskaiti <strong>8.50 EUR</strong> ar piezīmi:
             </p>
             <code className="block rounded-lg bg-neutral-900 px-3 py-2 text-xs">
               3SM treniņš · {new Date().toISOString().slice(0, 10)}

@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 
 type Result = { ok: true } | { ok: false; error: string };
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /**
  * Iesniegt rezultātu. RLS atļauj tikai treniņa apstiprinātajiem dalībniekiem.
  */
@@ -13,9 +15,11 @@ export async function submitResult(
   blackScore: number,
   whiteScore: number
 ): Promise<Result> {
-  if (!Number.isInteger(blackScore) || blackScore < 0)
+  if (!UUID_RE.test(trainingId))
+    return { ok: false, error: "Nederīgs treniņa ID." };
+  if (!Number.isInteger(blackScore) || blackScore < 0 || blackScore > 99)
     return { ok: false, error: "Nederīgs Melnās rezultāts." };
-  if (!Number.isInteger(whiteScore) || whiteScore < 0)
+  if (!Number.isInteger(whiteScore) || whiteScore < 0 || whiteScore > 99)
     return { ok: false, error: "Nederīgs Baltās rezultāts." };
 
   const supabase = await createClient();

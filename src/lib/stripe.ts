@@ -19,4 +19,4 @@ export function getStripe(): Stripe {
   return cached;
 }
 
-export const SINGLE_TRAINING_PRICE_CENTS = 800; // 8.00 EUR
+export const SINGLE_TRAINING_PRICE_CENTS = 850; // 8.50 EUR

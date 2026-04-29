@@ -92,7 +92,7 @@ export default function NoteikumiPage() {
               Pamatsastāvs ar aktīvu sezonas maksājumu piesakās uzreiz.
             </li>
             <li>
-              Rezervisti piesakās rindā un maksā 8 € (karte vai pārskaitījums
+              Rezervisti piesakās rindā un maksā 8.50 € (karte vai pārskaitījums
               uz Swedbank).
             </li>
             <li>Vari atcelt līdz 17:00.</li>

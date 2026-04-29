@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 
 type Result = { ok: true } | { ok: false; error: string };
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 type RegisterOutcome =
   | { ok: true; needsPayment?: false }
   | { ok: true; needsPayment: true }
@@ -21,6 +23,9 @@ type RegisterOutcome =
 export async function registerForTraining(
   trainingId: string
 ): Promise<RegisterOutcome> {
+  if (!UUID_RE.test(trainingId)) {
+    return { ok: false, error: "Nederīgs treniņa ID." };
+  }
   const supabase = await createClient();
   const {
     data: { user },
@@ -103,6 +108,9 @@ export async function registerForTraining(
  * Atceļ pašreizējā lietotāja reģistrāciju.
  */
 export async function cancelRegistration(trainingId: string): Promise<Result> {
+  if (!UUID_RE.test(trainingId)) {
+    return { ok: false, error: "Nederīgs treniņa ID." };
+  }
   const supabase = await createClient();
   const {
     data: { user },

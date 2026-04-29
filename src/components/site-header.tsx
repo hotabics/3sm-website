@@ -38,6 +38,12 @@ export async function SiteHeader() {
                   Treniņi
                 </Link>
                 <Link
+                  href="/admin/users"
+                  className="hidden rounded-lg border border-[var(--color-accent)]/40 px-3 py-1.5 text-xs text-[var(--color-accent)] transition hover:bg-[var(--color-accent)]/10 sm:inline-flex"
+                >
+                  Spēlētāji
+                </Link>
+                <Link
                   href="/admin/payments"
                   className="hidden rounded-lg border border-[var(--color-accent)]/40 px-3 py-1.5 text-xs text-[var(--color-accent)] transition hover:bg-[var(--color-accent)]/10 sm:inline-flex"
                 >
