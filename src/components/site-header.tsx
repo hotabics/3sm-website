@@ -49,6 +49,12 @@ export async function SiteHeader() {
                 >
                   Maksājumi
                 </Link>
+                <Link
+                  href="/admin/notifications"
+                  className="hidden rounded-lg border border-[var(--color-accent)]/40 px-3 py-1.5 text-xs text-[var(--color-accent)] transition hover:bg-[var(--color-accent)]/10 sm:inline-flex"
+                >
+                  Paziņojumi
+                </Link>
               </>
             )}
             <SignOutButton />

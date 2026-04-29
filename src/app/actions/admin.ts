@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { defaultTrainingTimes } from "@/lib/trainings";
 import { requireAdmin } from "@/lib/auth";
+import { notifyGroup } from "@/lib/notifications";
+import { formatRiga } from "@/lib/time";
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -34,6 +36,14 @@ export async function createTraining(formData: FormData): Promise<Result> {
   });
 
   if (error) return { ok: false, error: error.message };
+
+  // Paziņojums grupai par atvērto reģistrāciju (best-effort).
+  const dateLabel = formatRiga(date + "T20:00:00Z", "EEEE, d. MMMM");
+  await notifyGroup(
+    `🟣 3SM: reģistrācija atvērta uz ${dateLabel} treniņu (20:00–21:30, ${location}). Piesakies: https://3sm.lv`,
+    "registration_open"
+  );
+
   revalidatePath("/admin/trainings");
   revalidatePath("/");
   return { ok: true };
@@ -333,6 +343,20 @@ export async function cancelTraining(trainingId: string): Promise<Result> {
 
   // Atmaksā visus paid Stripe maksājumus šim treniņam.
   await refundPaymentsForTraining(trainingId);
+
+  // Paziņojums grupai (best-effort).
+  const { data: t } = await supabase
+    .from("trainings")
+    .select("date")
+    .eq("id", trainingId)
+    .maybeSingle();
+  if (t?.date) {
+    const dateLabel = formatRiga(t.date + "T20:00:00Z", "EEEE, d. MMMM");
+    await notifyGroup(
+      `🔴 3SM: ${dateLabel} treniņš atcelts. Samaksātie pārskaitījumi tiek atmaksāti.`,
+      "training_cancelled"
+    );
+  }
 
   revalidatePath("/admin/trainings", "layout");
   revalidatePath("/admin/payments");
