@@ -78,7 +78,6 @@ export async function getRegistrationsForTraining(
        user:users(name, nickname, avatar_url, player_type, fixed_team)`
     )
     .eq("training_id", trainingId)
-    .neq("status", "cancelled")
     .order("status", { ascending: true })
     .order("registered_at", { ascending: true });
 

@@ -7,6 +7,7 @@ import {
   removeRegistration,
 } from "@/app/actions/admin";
 import type { RegistrationWithUser } from "@/lib/trainings";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 
 export function ManagePlayers({
   registrations,
@@ -15,6 +16,7 @@ export function ManagePlayers({
 }) {
   const confirmed = registrations.filter((r) => r.status === "confirmed");
   const queue = registrations.filter((r) => r.status === "queue");
+  const cancelled = registrations.filter((r) => r.status === "cancelled");
 
   return (
     <div className="space-y-6">
@@ -24,6 +26,13 @@ export function ManagePlayers({
         players={queue}
         canApprove
       />
+      {cancelled.length > 0 && (
+        <Section
+          title={`Atteikušies / izslēgti (${cancelled.length})`}
+          players={cancelled}
+          muted
+        />
+      )}
     </div>
   );
 }
@@ -32,10 +41,12 @@ function Section({
   title,
   players,
   canApprove = false,
+  muted = false,
 }: {
   title: string;
   players: RegistrationWithUser[];
   canApprove?: boolean;
+  muted?: boolean;
 }) {
   return (
     <section>
@@ -47,7 +58,12 @@ function Section({
       ) : (
         <ul className="space-y-2">
           {players.map((r) => (
-            <PlayerRow key={r.id} reg={r} canApprove={canApprove} />
+            <PlayerRow
+              key={r.id}
+              reg={r}
+              canApprove={canApprove}
+              muted={muted}
+            />
           ))}
         </ul>
       )}
@@ -58,13 +74,16 @@ function Section({
 function PlayerRow({
   reg,
   canApprove,
+  muted = false,
 }: {
   reg: RegistrationWithUser;
   canApprove: boolean;
+  muted?: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
 
   function action(fn: () => Promise<{ ok: true } | { ok: false; error: string }>) {
     setError(null);
@@ -75,13 +94,20 @@ function PlayerRow({
     });
   }
 
+  const playerLabel = reg.user.nickname?.trim() || reg.user.name || "—";
+
   return (
-    <li className="flex items-center gap-3 rounded-lg bg-neutral-900/40 px-3 py-2">
+    <li
+      className={`flex items-center gap-3 rounded-lg px-3 py-2 ${
+        muted ? "bg-neutral-900/20 opacity-60" : "bg-neutral-900/40"
+      }`}
+    >
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm">{reg.user.name ?? "—"}</p>
+        <p className="truncate text-sm">{playerLabel}</p>
         <p className="text-xs text-neutral-500">
           {reg.user.player_type === "core" ? "Pamatsastāvs" : "Rezervists"}
           {reg.team && ` · ${reg.team === "black" ? "Melnā" : "Baltā"}`}
+          {muted && " · izslēgts"}
         </p>
         {error && (
           <p className="text-xs text-red-400" role="alert">
@@ -90,23 +116,50 @@ function PlayerRow({
         )}
       </div>
       <div className="flex gap-2">
-        {canApprove && (
+        {muted ? (
           <button
             onClick={() => action(() => approveRegistration(reg.id))}
             disabled={pending}
             className="rounded-md bg-green-500/20 px-3 py-1.5 text-xs font-medium text-green-300 hover:bg-green-500/30 disabled:opacity-50"
+            title="Atjaunot pieteikumu"
           >
-            Apstiprināt
+            Atjaunot
           </button>
+        ) : (
+          <>
+            {canApprove && (
+              <button
+                onClick={() => action(() => approveRegistration(reg.id))}
+                disabled={pending}
+                className="rounded-md bg-green-500/20 px-3 py-1.5 text-xs font-medium text-green-300 hover:bg-green-500/30 disabled:opacity-50"
+              >
+                Apstiprināt
+              </button>
+            )}
+            <button
+              onClick={() => setConfirming(true)}
+              disabled={pending}
+              className="rounded-md border border-neutral-700 px-3 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800 disabled:opacity-50"
+            >
+              Izslēgt
+            </button>
+          </>
         )}
-        <button
-          onClick={() => action(() => removeRegistration(reg.id))}
-          disabled={pending}
-          className="rounded-md border border-neutral-700 px-3 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800 disabled:opacity-50"
-        >
-          Izņemt
-        </button>
       </div>
+
+      {confirming && (
+        <ConfirmDialog
+          title="Izslēgt no treniņa?"
+          body={`Vai tiešām vēlies izslēgt „${playerLabel}" no šī treniņa? Spēlētājs paliks sarakstā kā atteicies.`}
+          confirmLabel="Jā, izslēgt"
+          onConfirm={() => {
+            setConfirming(false);
+            action(() => removeRegistration(reg.id));
+          }}
+          onCancel={() => setConfirming(false)}
+        />
+      )}
     </li>
   );
 }
+

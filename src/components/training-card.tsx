@@ -15,6 +15,7 @@ type Props = {
 export function TrainingCard({ training, registrations, profile, myStatus }: Props) {
   const confirmed = registrations.filter((r) => r.status === "confirmed");
   const queue = registrations.filter((r) => r.status === "queue");
+  const cancelled = registrations.filter((r) => r.status === "cancelled");
   const closesAt = formatRiga(training.registration_closes_at, "EEEE HH:mm");
   const isClosed = training.status !== "open";
   const dateLabel = formatRiga(training.date + "T20:00:00Z", "EEEE, d. MMMM");
@@ -64,6 +65,13 @@ export function TrainingCard({ training, registrations, profile, myStatus }: Pro
 
       <PlayerList title="Apstiprināti" players={confirmed} />
       {queue.length > 0 && <PlayerList title="Rindā" players={queue} />}
+      {cancelled.length > 0 && (
+        <PlayerList
+          title="Atteikušies / izslēgti"
+          players={cancelled}
+          muted
+        />
+      )}
     </article>
   );
 }
@@ -147,9 +155,11 @@ function Stat({ label, value }: { label: string; value: string }) {
 function PlayerList({
   title,
   players,
+  muted = false,
 }: {
   title: string;
   players: RegistrationWithUser[];
+  muted?: boolean;
 }) {
   if (players.length === 0) return null;
   return (
@@ -161,7 +171,9 @@ function PlayerList({
         {players.map((r) => (
           <li
             key={r.id}
-            className="flex items-center gap-3 rounded-lg bg-neutral-900/40 px-3 py-2"
+            className={`flex items-center gap-3 rounded-lg px-3 py-2 ${
+              muted ? "bg-neutral-900/20 opacity-60" : "bg-neutral-900/40"
+            }`}
           >
             <Avatar url={r.user.avatar_url} name={r.user.name} />
             <div className="min-w-0 flex-1">

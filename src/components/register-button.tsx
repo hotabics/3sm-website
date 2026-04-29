@@ -6,6 +6,7 @@ import {
   registerForTraining,
   cancelRegistration,
 } from "@/app/actions/registrations";
+import { ConfirmDialog } from "./confirm-dialog";
 
 type Props = {
   trainingId: string;
@@ -17,8 +18,9 @@ export function RegisterButton({ trainingId, myStatus, disabled }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
 
-  function onClick() {
+  function doToggle() {
     setError(null);
     startTransition(async () => {
       const action = myStatus
@@ -31,6 +33,14 @@ export function RegisterButton({ trainingId, myStatus, disabled }: Props) {
       }
       router.refresh();
     });
+  }
+
+  function onClick() {
+    if (myStatus) {
+      setConfirming(true);
+    } else {
+      doToggle();
+    }
   }
 
   if (disabled && !myStatus) {
@@ -67,6 +77,19 @@ export function RegisterButton({ trainingId, myStatus, disabled }: Props) {
         <p className="text-sm text-red-400" role="alert">
           {error}
         </p>
+      )}
+
+      {confirming && (
+        <ConfirmDialog
+          title="Atcelt pieteikumu?"
+          body="Vai tiešām vēlies atcelt savu pieteikumu uz šo treniņu? Vari pieteikties atpakaļ līdz pl. 17:00."
+          confirmLabel="Jā, atcelt"
+          onConfirm={() => {
+            setConfirming(false);
+            doToggle();
+          }}
+          onCancel={() => setConfirming(false)}
+        />
       )}
     </div>
   );
