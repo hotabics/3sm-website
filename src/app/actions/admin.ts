@@ -134,15 +134,95 @@ export async function updateResult(
   return { ok: true };
 }
 
+/**
+ * Atzīmē manuālu Swedbank pārskaitījumu kā samaksātu.
+ */
+export async function markPaymentPaid(paymentId: string): Promise<Result> {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("payments")
+    .update({ status: "paid", paid_at: new Date().toISOString() })
+    .eq("id", paymentId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/admin/payments");
+  revalidatePath("/admin/trainings", "layout");
+  return { ok: true };
+}
+
+export async function rejectPayment(paymentId: string): Promise<Result> {
+  await requireAdmin();
+  const supabase = await createClient();
+  // Atzīmē kā failed un atceļ saistīto reģistrāciju, ja tāda ir.
+  const { error: payErr } = await supabase
+    .from("payments")
+    .update({ status: "failed" })
+    .eq("id", paymentId);
+  if (payErr) return { ok: false, error: payErr.message };
+
+  const { error: regErr } = await supabase
+    .from("registrations")
+    .update({ status: "cancelled", cancelled_at: new Date().toISOString() })
+    .eq("payment_id", paymentId);
+  if (regErr) return { ok: false, error: regErr.message };
+
+  revalidatePath("/admin/payments");
+  revalidatePath("/admin/trainings", "layout");
+  return { ok: true };
+}
+
 export async function cancelTraining(trainingId: string): Promise<Result> {
   await requireAdmin();
   const supabase = await createClient();
+
   const { error } = await supabase
     .from("trainings")
     .update({ status: "cancelled" })
     .eq("id", trainingId);
   if (error) return { ok: false, error: error.message };
+
+  // Atmaksā visus paid Stripe maksājumus šim treniņam.
+  await refundPaymentsForTraining(trainingId);
+
   revalidatePath("/admin/trainings", "layout");
+  revalidatePath("/admin/payments");
   revalidatePath("/");
   return { ok: true };
+}
+
+/**
+ * Iziet caur visiem `paid` Stripe maksājumiem treniņam un izraisa
+ * refund'u. Manuālie Swedbank maksājumi tiek tikai atzīmēti — admin
+ * pats atgriež naudu pa banku.
+ */
+async function refundPaymentsForTraining(trainingId: string): Promise<void> {
+  const supabase = await createClient();
+  const { data: payments } = await supabase
+    .from("payments")
+    .select("id, provider, status, stripe_payment_intent_id")
+    .eq("training_id", trainingId)
+    .eq("status", "paid");
+
+  if (!payments || payments.length === 0) return;
+
+  // Lazy import, lai Stripe SDK netiek loaded, kad nav nepieciešams.
+  const { getStripe } = await import("@/lib/stripe");
+
+  for (const p of payments) {
+    if (p.provider === "stripe" && p.stripe_payment_intent_id) {
+      try {
+        const stripe = getStripe();
+        await stripe.refunds.create({
+          payment_intent: p.stripe_payment_intent_id,
+        });
+      } catch (e) {
+        console.error("[refund] failed for", p.id, e);
+        continue;
+      }
+    }
+    await supabase
+      .from("payments")
+      .update({ status: "refunded", refunded_at: new Date().toISOString() })
+      .eq("id", p.id);
+  }
 }

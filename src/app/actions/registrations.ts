@@ -5,12 +5,22 @@ import { createClient } from "@/lib/supabase/server";
 
 type Result = { ok: true } | { ok: false; error: string };
 
+type RegisterOutcome =
+  | { ok: true; needsPayment?: false }
+  | { ok: true; needsPayment: true }
+  | { ok: false; error: string };
+
 /**
  * Pieteic pašreizējo lietotāju uz treniņu.
- * - Pamatsastāva spēlētāji (`player_type = 'core'`) ar derīgu sezonas maksu → 'confirmed'
- * - Pārējie → 'queue' (gaida apstiprinājumu vai apmaksu)
+ * - Pamatsastāva spēlētāji (`player_type = 'core'`) ar derīgu sezonas maksu →
+ *   uzreiz 'confirmed' (un fiksētā komanda, ja tāda ir).
+ * - Pārējie → atgriež `needsPayment: true`, klientam jāatver maksājuma modāls
+ *   un jāizsauc `startReservePayment`. Reģistrācijas ieraksts šajā soļā netiek
+ *   izveidots.
  */
-export async function registerForTraining(trainingId: string): Promise<Result> {
+export async function registerForTraining(
+  trainingId: string
+): Promise<RegisterOutcome> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -43,13 +53,16 @@ export async function registerForTraining(trainingId: string): Promise<Result> {
     profile?.semester_paid_until &&
     profile.semester_paid_until >= today;
 
-  const status = isCorePaid ? "confirmed" : "queue";
+  if (!isCorePaid) {
+    // Rezervists vai pamatsastāvs ar nokavētu sezonas maksu — vajag 8 EUR.
+    return { ok: true, needsPayment: true };
+  }
+
   const team =
-    isCorePaid && profile?.fixed_team && profile.fixed_team !== "flexible"
+    profile?.fixed_team && profile.fixed_team !== "flexible"
       ? profile.fixed_team
       : null;
 
-  // Ja jau atcelts ieraksts eksistē — atjauno; citādi insert.
   const { data: existing } = await supabase
     .from("registrations")
     .select("id, status")
@@ -64,7 +77,7 @@ export async function registerForTraining(trainingId: string): Promise<Result> {
     const { error } = await supabase
       .from("registrations")
       .update({
-        status,
+        status: "confirmed",
         team,
         cancelled_at: null,
         registered_at: new Date().toISOString(),
@@ -75,7 +88,7 @@ export async function registerForTraining(trainingId: string): Promise<Result> {
     const { error } = await supabase.from("registrations").insert({
       training_id: trainingId,
       user_id: user.id,
-      status,
+      status: "confirmed",
       team,
     });
     if (error) return { ok: false, error: error.message };
