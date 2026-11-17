@@ -49,6 +49,7 @@ export function OnboardingForm({
     const { error: upsertError } = await supabase.from("users").upsert(
       {
         id: user.id,
+        auth_user_id: user.id,
         email: user.email!,
         name: name.trim(),
         nickname: nickname.trim() || null,

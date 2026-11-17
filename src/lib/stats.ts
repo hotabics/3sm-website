@@ -11,6 +11,8 @@ export type PlayerStats = {
   black_count: number;
   white_count: number;
   win_rate: number;
+  mvp_count: number;
+  custom_awards_count: number;
 };
 
 type Row = {
@@ -51,16 +53,13 @@ export async function computeStats(userId?: string): Promise<PlayerStats[]> {
 
   const map = new Map<string, PlayerStats>();
 
-  for (const row of rows) {
-    const result = row.training?.result?.[0];
-    if (!result || result.status !== "approved") continue;
-
-    let s = map.get(row.user_id);
+  function ensure(uid: string, name: string | null, avatar: string | null) {
+    let s = map.get(uid);
     if (!s) {
       s = {
-        user_id: row.user_id,
-        name: row.user?.name ?? null,
-        avatar_url: row.user?.avatar_url ?? null,
+        user_id: uid,
+        name,
+        avatar_url: avatar,
         played: 0,
         wins: 0,
         draws: 0,
@@ -68,9 +67,19 @@ export async function computeStats(userId?: string): Promise<PlayerStats[]> {
         black_count: 0,
         white_count: 0,
         win_rate: 0,
+        mvp_count: 0,
+        custom_awards_count: 0,
       };
-      map.set(row.user_id, s);
+      map.set(uid, s);
     }
+    return s;
+  }
+
+  for (const row of rows) {
+    const result = row.training?.result?.[0];
+    if (!result || result.status !== "approved") continue;
+
+    const s = ensure(row.user_id, row.user?.name ?? null, row.user?.avatar_url ?? null);
 
     s.played += 1;
     if (row.team === "black") s.black_count += 1;
@@ -81,6 +90,34 @@ export async function computeStats(userId?: string): Promise<PlayerStats[]> {
     if (myScore > oppScore) s.wins += 1;
     else if (myScore < oppScore) s.losses += 1;
     else s.draws += 1;
+  }
+
+  // Apbalvojumi: skaita tikai pret apstiprinātiem rezultātiem, lai
+  // statistikas summa atbilst spēļu summai.
+  let awardsQuery = supabase
+    .from("match_awards")
+    .select(
+      `user_id, award_type,
+       user:users(name, avatar_url),
+       training:trainings(result:results(status))`
+    );
+  if (userId) awardsQuery = awardsQuery.eq("user_id", userId);
+
+  type AwardRow = {
+    user_id: string;
+    award_type: "mvp_black" | "mvp_white" | "custom";
+    user: { name: string | null; avatar_url: string | null } | null;
+    training: { result: { status: string }[] | null } | null;
+  };
+  const { data: awardData } = await awardsQuery;
+  const awardRows = ((awardData ?? []) as unknown) as AwardRow[];
+
+  for (const a of awardRows) {
+    const approved = a.training?.result?.[0]?.status === "approved";
+    if (!approved) continue;
+    const s = ensure(a.user_id, a.user?.name ?? null, a.user?.avatar_url ?? null);
+    if (a.award_type === "custom") s.custom_awards_count += 1;
+    else s.mvp_count += 1;
   }
 
   for (const s of map.values()) {

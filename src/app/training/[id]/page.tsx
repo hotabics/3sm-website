@@ -8,7 +8,11 @@ import {
   getRegistrationsForTraining,
 } from "@/lib/trainings";
 import { formatRiga } from "@/lib/time";
+import { buildGoogleCalendarUrl } from "@/lib/calendar";
 import { ResultForm } from "./result-form";
+import { AwardsPanel, type Award } from "./awards-panel";
+import { AdminResultControls } from "./admin-result-controls";
+import { ShareButtons } from "./share-buttons";
 
 type Params = { id: string };
 
@@ -26,6 +30,7 @@ export default async function TrainingPage({
 
   const registrations = await getRegistrationsForTraining(training.id);
   const confirmed = registrations.filter((r) => r.status === "confirmed");
+  const queue = registrations.filter((r) => r.status === "queue");
   const black = confirmed.filter((r) => r.team === "black");
   const white = confirmed.filter((r) => r.team === "white");
 
@@ -36,7 +41,50 @@ export default async function TrainingPage({
     .eq("training_id", id)
     .maybeSingle();
 
+  const { data: awardsData } = await supabase
+    .from("match_awards")
+    .select(`id, user_id, award_type, label, user:users(name)`)
+    .eq("training_id", id);
+  type AwardRow = {
+    id: string;
+    user_id: string;
+    award_type: "mvp_black" | "mvp_white" | "custom";
+    label: string | null;
+    user: { name: string | null } | null;
+  };
+  const awards: Award[] = ((awardsData ?? []) as unknown as AwardRow[]).map(
+    (a) => ({
+      id: a.id,
+      user_id: a.user_id,
+      user_name: a.user?.name ?? null,
+      award_type: a.award_type,
+      label: a.label,
+    })
+  );
+
   const wasParticipant = confirmed.some((r) => r.user_id === profile.id);
+  const isAdmin = profile.role === "admin";
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://3sm.lv";
+  const shareUrl = `${appUrl}/training/${training.id}`;
+  const icsUrl = `/training/${training.id}/calendar.ics`;
+  const googleCalendarUrl = buildGoogleCalendarUrl({
+    trainingId: training.id,
+    date: training.date,
+    startTime: training.start_time,
+    endTime: training.end_time,
+    location: training.location ?? "Olimpiskais centrs",
+    appUrl,
+  });
+
+  const blackPlayers = black.map((r) => ({
+    user_id: r.user_id,
+    name: r.user.name,
+  }));
+  const whitePlayers = white.map((r) => ({
+    user_id: r.user_id,
+    name: r.user.name,
+  }));
 
   return (
     <div>
@@ -46,14 +94,23 @@ export default async function TrainingPage({
           ← Sākums
         </Link>
 
-        <header>
+        <header className="space-y-3">
           <h1 className="text-3xl font-bold capitalize">
             {formatRiga(training.date + "T20:00:00Z", "EEEE, d. MMMM")}
           </h1>
-          <p className="mt-1 text-neutral-400">
+          <p className="text-neutral-400">
             {training.start_time.slice(0, 5)}–{training.end_time.slice(0, 5)} ·{" "}
             {training.location}
           </p>
+          <ShareButtons
+            shareUrl={shareUrl}
+            googleCalendarUrl={googleCalendarUrl}
+            icsUrl={icsUrl}
+            shareTitle={`3SM treniņš — ${formatRiga(
+              training.date + "T20:00:00Z",
+              "EEEE, d. MMMM"
+            )}`}
+          />
         </header>
 
         {result && (
@@ -71,8 +128,30 @@ export default async function TrainingPage({
             <p className="mt-2 text-3xl font-bold">
               Melnā {result.black_score} : {result.white_score} Baltā
             </p>
+
+            {isAdmin && result.status === "pending" && (
+              <AdminResultControls
+                resultId={result.id}
+                initialBlack={result.black_score}
+                initialWhite={result.white_score}
+              />
+            )}
           </section>
         )}
+
+        <section className="rounded-2xl border border-neutral-800 bg-neutral-950/50 p-5">
+          <h2 className="font-medium">Pieteikušies ({confirmed.length})</h2>
+          <p className="mt-1 text-sm text-neutral-500">
+            Dalībnieki redzami arī pirms komandu sadales. Google Sheets dalībnieki bez 3SM konta ir atzīmēti kā neidentificēti.
+          </p>
+          <TrainingRoster players={confirmed} />
+          {queue.length > 0 && (
+            <div className="mt-5 border-t border-neutral-800 pt-4">
+              <h3 className="text-sm font-medium">Rezervē ({queue.length})</h3>
+              <TrainingRoster players={queue} />
+            </div>
+          )}
+        </section>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <TeamCard title="Melnā" players={black} variant="black" />
@@ -92,8 +171,42 @@ export default async function TrainingPage({
             />
           </section>
         )}
+
+        <AwardsPanel
+          trainingId={training.id}
+          black={blackPlayers}
+          white={whitePlayers}
+          awards={awards}
+          isAdmin={isAdmin}
+        />
       </main>
     </div>
+  );
+}
+
+function TrainingRoster({
+  players,
+}: {
+  players: Awaited<ReturnType<typeof getRegistrationsForTraining>>;
+}) {
+  return (
+    <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+      {players.map((registration) => (
+        <li key={registration.id} className="rounded-lg bg-neutral-900/60 px-3 py-2 text-sm">
+          <span className="font-medium">
+            {registration.user.nickname?.trim() || registration.user.name || "Spēlētājs"}
+          </span>
+          {registration.user.identity_status === "unidentified" && (
+            <span className="ml-2 text-xs text-amber-300">Neidentificēts · Google Sheets</span>
+          )}
+          {registration.team && (
+            <span className="block text-xs text-neutral-500">
+              {registration.team === "black" ? "Melnā komanda" : "Baltā komanda"}
+            </span>
+          )}
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -121,7 +234,10 @@ function TeamCard({
         <ul className="mt-3 space-y-1.5">
           {players.map((r) => (
             <li key={r.id} className="text-sm">
-              {r.user.name ?? "—"}
+              {r.user.nickname?.trim() || r.user.name || "—"}
+              {r.user.identity_status === "unidentified" && (
+                <span className="ml-2 text-xs text-amber-300">Neidentificēts</span>
+              )}
             </li>
           ))}
         </ul>

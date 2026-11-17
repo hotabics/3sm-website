@@ -6,13 +6,14 @@ import { UserRow } from "./user-row";
 
 export type UserRowData = {
   id: string;
-  email: string;
+  email: string | null;
   name: string | null;
   nickname: string | null;
   role: "player" | "admin";
   player_type: "core" | "reserve";
   fixed_team: "black" | "white" | "flexible" | null;
   semester_paid_until: string | null;
+  identity_status: "identified" | "unidentified";
 };
 
 export default async function AdminUsersPage() {
@@ -22,11 +23,12 @@ export default async function AdminUsersPage() {
   const { data } = await supabase
     .from("users")
     .select(
-      "id, email, name, nickname, role, player_type, fixed_team, semester_paid_until"
+      "id, email, name, nickname, role, player_type, fixed_team, semester_paid_until, identity_status"
     )
     .order("name", { ascending: true });
 
   const users = (data ?? []) as UserRowData[];
+  const unidentifiedCount = users.filter((user) => user.identity_status === "unidentified").length;
 
   return (
     <div>
@@ -36,7 +38,7 @@ export default async function AdminUsersPage() {
           <div>
             <h1 className="text-3xl font-bold">Spēlētāji</h1>
             <p className="mt-1 text-sm text-neutral-500">
-              {users.length} reģistrēti · pārvaldi lomas, statusu un komandu.
+              {users.length - unidentifiedCount} ar 3SM kontu · {unidentifiedCount} neidentificēti no Google Sheets.
             </p>
           </div>
           <Link

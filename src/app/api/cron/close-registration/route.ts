@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notifyGroup, notifyUser } from "@/lib/notifications";
+import { refundPaidPaymentsForTraining } from "@/lib/payment-refunds";
 import { formatRiga } from "@/lib/time";
 import { amountDueFor, isCorePaid } from "@/lib/debts";
 
@@ -42,7 +43,8 @@ export async function GET(request: Request) {
     const { data: regs } = await supabase
       .from("registrations")
       .select(
-        `id, user_id, status, registered_at,
+        `id, user_id, status, payment_id, registered_at,
+         payment:payments(status),
          user:users(player_type, fixed_team, semester_paid_until, name, nickname)`
       )
       .eq("training_id", t.id)
@@ -53,7 +55,9 @@ export async function GET(request: Request) {
       id: string;
       user_id: string;
       status: string;
+      payment_id: string | null;
       registered_at: string;
+      payment: { status: "pending" | "paid" | "failed" | "refunded" } | null;
       user: {
         player_type: "core" | "reserve";
         fixed_team: "black" | "white" | "flexible" | null;
@@ -66,6 +70,8 @@ export async function GET(request: Request) {
     const dateLabel = formatRiga(t.date + "T20:00:00Z", "EEEE, d. MMMM");
 
     const regsTyped = ((regs ?? []) as unknown) as RegRow[];
+    // Apmaksa ir neobligāta: arī neapmaksāts pieteikums ieņem vietu un,
+    // ja nonāk sastāvā, rada parādu (amount_due_cents).
 
     if (regsTyped.length < t.min_players) {
       // Pārāk maz — atcel.
@@ -74,12 +80,20 @@ export async function GET(request: Request) {
         .update({ status: "cancelled" })
         .eq("id", t.id);
 
+      const refunds = await refundPaidPaymentsForTraining(t.id);
+
       await notifyGroup(
         `🔴 3SM: ${dateLabel} treniņš atcelts — pieteicās tikai ${regsTyped.length} (vajag vismaz ${t.min_players}). Samaksātos pārskaitījumus atmaksāsim.`,
         "training_cancelled"
       );
 
-      results.push({ training_id: t.id, action: "cancelled", reason: "below_min" });
+      results.push({
+        training_id: t.id,
+        action: "cancelled",
+        reason: "below_min",
+        refunded: refunds.refunded,
+        refund_failures: refunds.failed,
+      });
       continue;
     }
 

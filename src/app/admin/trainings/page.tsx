@@ -5,7 +5,11 @@ import { formatRiga, isoDateRiga, nextTrainingDate } from "@/lib/time";
 import { SiteHeader } from "@/components/site-header";
 import { CreateTrainingForm } from "./create-form";
 
-export default async function AdminTrainingsPage() {
+export default async function AdminTrainingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ date?: string }>;
+}) {
   await requireAdmin();
   const supabase = await createClient();
 
@@ -32,17 +36,28 @@ export default async function AdminTrainingsPage() {
       else if (r.status === "queue") countsById[key].queue++;
     }
   }
-  const defaultDate = isoDateRiga(nextTrainingDate());
+  const requestedDate = (await searchParams).date;
+  const defaultDate = requestedDate && /^\d{4}-\d{2}-\d{2}$/.test(requestedDate)
+    ? requestedDate
+    : isoDateRiga(nextTrainingDate());
 
   return (
     <div>
       <SiteHeader />
       <main className="mx-auto max-w-3xl px-6 py-10 space-y-10">
-        <div>
-          <h1 className="text-3xl font-bold">Treniņi</h1>
-          <p className="mt-1 text-neutral-400">
-            Pārvaldi treniņu sarakstu un sastāvus.
-          </p>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h1 className="text-3xl font-bold">Treniņi</h1>
+            <p className="mt-1 text-neutral-400">
+              Pārvaldi treniņu sarakstu un sastāvus.
+            </p>
+          </div>
+          <Link
+            href="/admin/integrations/google-sheets"
+            className="rounded-lg border border-[var(--color-accent)]/40 px-3 py-2 text-xs font-medium text-[var(--color-accent)] hover:bg-[var(--color-accent)]/10"
+          >
+            Google Sheets tests →
+          </Link>
         </div>
 
         <section className="rounded-2xl border border-neutral-800 bg-neutral-950/50 p-6">

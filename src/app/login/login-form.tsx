@@ -90,6 +90,13 @@ export function LoginForm() {
           className="text-[var(--color-accent)] underline-offset-2 hover:underline"
         >
           iekšējiem noteikumiem
+        </a>{" "}
+        un{" "}
+        <a
+          href="/privatums"
+          className="text-[var(--color-accent)] underline-offset-2 hover:underline"
+        >
+          privātuma politikai
         </a>
         .
       </p>

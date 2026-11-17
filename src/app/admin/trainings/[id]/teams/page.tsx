@@ -8,6 +8,7 @@ import {
 } from "@/lib/trainings";
 import { formatRiga } from "@/lib/time";
 import { TeamsBoard } from "./teams-board";
+import { BroadcastButton } from "./broadcast-button";
 
 type Params = { id: string };
 
@@ -47,6 +48,17 @@ export default async function TeamsPage({
         </header>
 
         <TeamsBoard initialPlayers={confirmed} />
+
+        <div className="border-t border-neutral-900 pt-6">
+          <h2 className="mb-2 text-sm font-medium uppercase tracking-widest text-neutral-400">
+            Komandu paziņojumi
+          </h2>
+          <p className="mb-3 text-sm text-neutral-500">
+            Katrs spēlētājs saņem WhatsApp ar savu komandu un kreklu krāsu.
+            Atkārtoti sūtot, izlaiž tos, kuriem komanda nav mainījusies.
+          </p>
+          <BroadcastButton trainingId={training.id} />
+        </div>
       </main>
     </div>
   );

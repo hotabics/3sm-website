@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { isCorePaid } from "@/lib/debts";
+import { deliverRegistrationUpdateNotifications } from "@/lib/notification-outbox";
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -39,67 +39,29 @@ export async function registerForTraining(
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Nav pieslēgts." };
 
-  const { data: training } = await supabase
-    .from("trainings")
-    .select("id, status, registration_closes_at")
-    .eq("id", trainingId)
-    .maybeSingle();
+  // Treniņa statusa, laika un dublikātu pārbaudes notiek DB funkcijā zem
+  // rindas bloķēšanas, lai paralēli pieteikumi nevarētu apiet robežas.
+  const { data, error } = await supabase.rpc("register_for_training", {
+    p_training_id: trainingId,
+  });
+  if (error) return { ok: false, error: error.message };
 
-  if (!training) return { ok: false, error: "Treniņš nav atrasts." };
-  if (training.status !== "open") {
-    return { ok: false, error: "Reģistrācija slēgta." };
-  }
-  if (new Date(training.registration_closes_at) <= new Date()) {
-    return { ok: false, error: "Reģistrācijas laiks beidzies." };
-  }
-
-  const { data: profile } = await supabase
-    .from("users")
-    .select("player_type, semester_paid_until, fixed_team")
-    .eq("id", user.id)
-    .single();
-
-  const corePaid = isCorePaid(profile);
-  const status = corePaid ? "confirmed" : "queue";
-  const team =
-    corePaid && profile?.fixed_team && profile.fixed_team !== "flexible"
-      ? profile.fixed_team
-      : null;
-
-  const { data: existing } = await supabase
-    .from("registrations")
-    .select("id, status")
-    .eq("training_id", trainingId)
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (existing) {
-    if (existing.status !== "cancelled") {
-      return { ok: false, error: "Tu jau esi pieteicies." };
-    }
-    const { error } = await supabase
-      .from("registrations")
-      .update({
-        status,
-        team,
-        cancelled_at: null,
-        registered_at: new Date().toISOString(),
-      })
-      .eq("id", existing.id);
-    if (error) return { ok: false, error: error.message };
-  } else {
-    const { error } = await supabase.from("registrations").insert({
-      training_id: trainingId,
-      user_id: user.id,
-      status,
-      team,
-    });
-    if (error) return { ok: false, error: error.message };
-  }
+  const row = (Array.isArray(data) ? data[0] : data) as
+    | { registration_id: string; registration_status: "confirmed" | "queue" }
+    | null;
+  if (!row) return { ok: false, error: "Neizdevās pieteikties." };
 
   revalidatePath("/");
   revalidatePath(`/training/${trainingId}`);
-  return { ok: true, status, canPay: !corePaid };
+
+  // Piegādes kļūme neatceļ jau veiksmīgu pieteikumu: notikums paliek outbox
+  // un cron to mēģinās vēlreiz.
+  await deliverRegistrationUpdateNotifications({
+    registrationId: row.registration_id,
+  });
+
+  const status = row.registration_status;
+  return { ok: true, status, canPay: status !== "confirmed" };
 }
 
 /**
@@ -117,29 +79,17 @@ export async function cancelRegistration(trainingId: string): Promise<Result> {
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Nav pieslēgts." };
 
-  const { data: training } = await supabase
-    .from("trainings")
-    .select("status, registration_closes_at")
-    .eq("id", trainingId)
-    .maybeSingle();
+  const { error } = await supabase.rpc("cancel_my_registration", {
+    p_training_id: trainingId,
+  });
+  if (error) return { ok: false, error: error.message };
 
-  if (!training) return { ok: false, error: "Treniņš nav atrasts." };
-  if (training.status === "completed" || training.status === "cancelled") {
-    return { ok: false, error: "Treniņš jau pabeigts vai atcelts." };
-  }
-  if (new Date(training.registration_closes_at) <= new Date()) {
-    return { ok: false, error: "Atcelšana vairs nav iespējama (pēc 17:00)." };
-  }
-
-  const { data: reg, error } = await supabase
+  const { data: reg } = await createAdminClient()
     .from("registrations")
-    .update({ status: "cancelled", cancelled_at: new Date().toISOString() })
+    .select("id, payment_id")
     .eq("training_id", trainingId)
     .eq("user_id", user.id)
-    .select("id, payment_id")
     .maybeSingle();
-
-  if (error) return { ok: false, error: error.message };
 
   if (reg?.payment_id) {
     await releasePayment(reg.id, reg.payment_id);
