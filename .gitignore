@@ -20,6 +20,9 @@ build/
 .env.local
 .env*.local
 
+# database exports stay local
+backups/
+
 # vercel
 .vercel
 

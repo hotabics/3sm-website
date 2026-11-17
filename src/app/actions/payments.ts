@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getStripe, SINGLE_TRAINING_PRICE_CENTS } from "@/lib/stripe";
 import { formatRiga } from "@/lib/time";
+import { notifyAdmins } from "@/lib/notifications";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -69,6 +70,20 @@ export async function startReservePayment(
   // Service role klients — webhook un servera puses mutācijām.
   const admin = createAdminClient();
 
+  // Stripe Checkout vēl neveido registrations rindu. Bez šīs pārbaudes viens
+  // lietotājs varētu atvērt vairākas paralēlas maksājuma sesijas.
+  const { data: pendingPayment } = await admin
+    .from("payments")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("training_id", trainingId)
+    .eq("type", "single_training")
+    .eq("status", "pending")
+    .maybeSingle();
+  if (pendingPayment) {
+    return { ok: false, error: "Tev jau ir gaidošs maksājums par šo treniņu." };
+  }
+
   // Maksājuma rinda (pending).
   const { data: payment, error: payErr } = await admin
     .from("payments")
@@ -98,6 +113,19 @@ export async function startReservePayment(
     if (regErr) return { ok: false, error: regErr.message };
     revalidatePath("/");
     revalidatePath(`/training/${trainingId}`);
+
+    const { data: profile } = await admin
+      .from("users")
+      .select("name, nickname")
+      .eq("id", user.id)
+      .maybeSingle();
+    const displayName =
+      profile?.nickname?.trim() || profile?.name?.trim() || user.email || "Spēlētājs";
+    const dateLabel = formatRiga(training.date + "T20:00:00Z", "EEEE, d. MMMM");
+    await notifyAdmins(
+      `🆕 3SM: ${displayName} pieteicās ${dateLabel} treniņam (rezervists, Swedbank — gaida apstiprinājumu).`,
+      "admin_new_registration"
+    );
     return { ok: true };
   }
 

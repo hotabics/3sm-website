@@ -31,6 +31,12 @@ export default async function StatsPage() {
                   <th className="px-3 py-3 text-right">N</th>
                   <th className="px-3 py-3 text-right">Z</th>
                   <th className="px-3 py-3 text-right">M/B</th>
+                  <th className="px-3 py-3 text-right" title="MVP titulu skaits">
+                    MVP
+                  </th>
+                  <th className="px-3 py-3 text-right" title="Citi apbalvojumi">
+                    Apb.
+                  </th>
                   <th className="px-4 py-3 text-right">Win%</th>
                 </tr>
               </thead>
@@ -56,6 +62,12 @@ export default async function StatsPage() {
                     <td className="px-3 py-3 text-right text-neutral-400">
                       {s.black_count}/{s.white_count}
                     </td>
+                    <td className="px-3 py-3 text-right text-yellow-400">
+                      {s.mvp_count || ""}
+                    </td>
+                    <td className="px-3 py-3 text-right text-neutral-300">
+                      {s.custom_awards_count || ""}
+                    </td>
                     <td className="px-4 py-3 text-right font-semibold">
                       {(s.win_rate * 100).toFixed(0)}%
                     </td>
@@ -68,7 +80,8 @@ export default async function StatsPage() {
 
         <p className="text-xs text-neutral-600">
           Sp. = spēles · U = uzvaras · N = neizšķirti · Z = zaudējumi ·
-          M/B = melnās/baltās komandas · Win% = uzvaru procents.
+          M/B = melnās/baltās komandas · MVP = komandas labākā spēlētāja titulu skaits ·
+          Apb. = citi apbalvojumi · Win% = uzvaru procents.
         </p>
 
         <Link href="/" className="text-sm text-neutral-500 hover:text-neutral-300">

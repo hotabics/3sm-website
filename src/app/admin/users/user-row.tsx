@@ -24,7 +24,8 @@ export function UserRow({ user, isMe }: { user: UserRowData; isMe: boolean }) {
     });
   }
 
-  const displayName = user.nickname?.trim() || user.name || user.email;
+  const unidentified = user.identity_status === "unidentified";
+  const displayName = user.nickname?.trim() || user.name || user.email || "Neidentificēts spēlētājs";
 
   return (
     <li className="rounded-2xl border border-neutral-800 bg-neutral-950/50 p-4">
@@ -37,9 +38,12 @@ export function UserRow({ user, isMe }: { user: UserRowData; isMe: boolean }) {
               {isMe && (
                 <span className="ml-2 text-xs text-neutral-500">(tu)</span>
               )}
+              {unidentified && (
+                <span className="ml-2 text-xs text-amber-300">Neidentificēts</span>
+              )}
             </p>
             <p className="truncate text-xs text-neutral-500">
-              {user.email}
+              {user.email ?? "Google Sheets · nav 3SM konta"}
               {user.semester_paid_until &&
                 ` · sezona līdz ${user.semester_paid_until}`}
             </p>
@@ -55,7 +59,7 @@ export function UserRow({ user, isMe }: { user: UserRowData; isMe: boolean }) {
             { value: "player", label: "Spēlētājs" },
             { value: "admin", label: "Admin" },
           ]}
-          disabled={pending}
+          disabled={pending || unidentified}
           onChange={(v) => run(() => setUserRole(user.id, v as "player" | "admin"))}
         />
         <Pill
@@ -65,7 +69,7 @@ export function UserRow({ user, isMe }: { user: UserRowData; isMe: boolean }) {
             { value: "core", label: "Pamatsastāvs" },
             { value: "reserve", label: "Rezervists" },
           ]}
-          disabled={pending}
+          disabled={pending || unidentified}
           onChange={(v) =>
             run(() => setUserPlayerType(user.id, v as "core" | "reserve"))
           }

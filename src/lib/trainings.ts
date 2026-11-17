@@ -27,6 +27,7 @@ export type RegistrationWithUser = {
     avatar_url: string | null;
     player_type: "core" | "reserve";
     fixed_team: "black" | "white" | "flexible" | null;
+    identity_status: "identified" | "unidentified";
   };
 };
 
@@ -75,7 +76,7 @@ export async function getRegistrationsForTraining(
     .from("registrations")
     .select(
       `id, user_id, status, team, queue_position, registered_at,
-       user:users(name, nickname, avatar_url, player_type, fixed_team)`
+       user:users(name, nickname, avatar_url, player_type, fixed_team, identity_status)`
     )
     .eq("training_id", trainingId)
     .order("status", { ascending: true })

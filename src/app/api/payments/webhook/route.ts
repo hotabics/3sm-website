@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { notifyAdmins } from "@/lib/notifications";
+import { deliverRegistrationUpdateNotifications } from "@/lib/notification-outbox";
+import { formatRiga } from "@/lib/time";
 
 export const runtime = "nodejs";
 
@@ -40,47 +43,68 @@ export async function POST(request: Request) {
       const trainingId = session.metadata?.training_id;
       if (!paymentId || !userId || !trainingId) break;
 
-      // Idempotency: ja maksājums jau atzīmēts kā paid, šis ir atkārtots
-      // event delivery — neko nedarām.
+      // Webhook drīkst pienākt atkārtoti. Maksājuma atzīmi atjaunojam tikai
+      // vienreiz, bet zemāk vienmēr pārbaudām, vai reģistrācija patiešām ir.
       const { data: existingPayment } = await admin
         .from("payments")
         .select("id, status")
         .eq("id", paymentId)
         .maybeSingle();
-      if (!existingPayment || existingPayment.status === "paid") {
+      if (!existingPayment) {
+        break;
+      }
+      if (existingPayment.status !== "pending" && existingPayment.status !== "paid") {
         break;
       }
 
-      await admin
-        .from("payments")
-        .update({
-          status: "paid",
-          paid_at: new Date().toISOString(),
-          stripe_payment_intent_id:
-            typeof session.payment_intent === "string"
-              ? session.payment_intent
-              : session.payment_intent?.id ?? null,
-        })
-        .eq("id", paymentId)
-        .eq("status", "pending"); // tikai no pending → paid (race-safe)
+      if (existingPayment.status === "pending") {
+        const { error: paymentError } = await admin
+          .from("payments")
+          .update({
+            status: "paid",
+            paid_at: new Date().toISOString(),
+            stripe_payment_intent_id:
+              typeof session.payment_intent === "string"
+                ? session.payment_intent
+                : session.payment_intent?.id ?? null,
+          })
+          .eq("id", paymentId)
+          .eq("status", "pending"); // tikai no pending → paid (race-safe)
+        if (paymentError) {
+          console.error("[stripe webhook] could not mark payment paid", paymentError);
+          return NextResponse.json({ error: "payment update failed" }, { status: 500 });
+        }
+      }
 
       // Reģistrē, ja vēl nav (training_id + user_id ir UNIQUE).
       const { data: existing } = await admin
         .from("registrations")
-        .select("id, status")
+        .select("id, status, payment_id")
         .eq("training_id", trainingId)
         .eq("user_id", userId)
         .maybeSingle();
 
+      let registrationCreated = false;
+      let registrationId: string | null = null;
       if (!existing) {
-        await admin.from("registrations").insert({
-          training_id: trainingId,
-          user_id: userId,
-          status: "queue",
-          payment_id: paymentId,
-        });
+        const { data: created, error: registrationError } = await admin
+          .from("registrations")
+          .insert({
+            training_id: trainingId,
+            user_id: userId,
+            status: "queue",
+            payment_id: paymentId,
+          })
+          .select("id")
+          .single();
+        if (registrationError || !created) {
+          console.error("[stripe webhook] could not create registration", registrationError);
+          return NextResponse.json({ error: "registration create failed" }, { status: 500 });
+        }
+        registrationId = created.id;
+        registrationCreated = true;
       } else if (existing.status === "cancelled") {
-        await admin
+        const { data: restored, error: registrationError } = await admin
           .from("registrations")
           .update({
             status: "queue",
@@ -88,7 +112,42 @@ export async function POST(request: Request) {
             cancelled_at: null,
             registered_at: new Date().toISOString(),
           })
-          .eq("id", existing.id);
+          .eq("id", existing.id)
+          .select("id")
+          .single();
+        if (registrationError || !restored) {
+          console.error("[stripe webhook] could not restore registration", registrationError);
+          return NextResponse.json({ error: "registration restore failed" }, { status: 500 });
+        }
+        registrationId = restored.id;
+        registrationCreated = true;
+      }
+
+      // Arī webhook retry pēc daļējas kļūmes izveido trūkstošo outbox notikumu.
+      const shouldNotify =
+        registrationId !== null ||
+        (existing?.status !== "cancelled" && existing?.payment_id === paymentId);
+      const notificationRegistrationId = registrationId ?? existing?.id ?? null;
+      if (shouldNotify && notificationRegistrationId) {
+        // Triggeris reģistrācijas INSERT/UPDATE laikā atomiski izveidoja
+        // outbox notikumu. Webhook šeit tikai sāk tūlītēju piegādes mēģinājumu.
+        await deliverRegistrationUpdateNotifications({ registrationId: notificationRegistrationId });
+      }
+
+      if (registrationCreated) {
+        const [{ data: profile }, { data: tr }] = await Promise.all([
+          admin.from("users").select("name, nickname").eq("id", userId).maybeSingle(),
+          admin.from("trainings").select("date").eq("id", trainingId).maybeSingle(),
+        ]);
+        const displayName =
+          profile?.nickname?.trim() || profile?.name?.trim() || "Spēlētājs";
+        const dateLabel = tr?.date
+          ? formatRiga(tr.date + "T20:00:00Z", "EEEE, d. MMMM")
+          : "treniņam";
+        await notifyAdmins(
+          `🆕 3SM: ${displayName} pieteicās ${dateLabel} treniņam (rezervists, Stripe samaksāts).`,
+          "admin_new_registration"
+        );
       }
       break;
     }

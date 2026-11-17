@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { defaultTrainingTimes } from "@/lib/trainings";
 import { requireAdmin } from "@/lib/auth";
-import { notifyGroup } from "@/lib/notifications";
+import { notifyGroup, notifyUser } from "@/lib/notifications";
+import { deliverRegistrationUpdateNotifications } from "@/lib/notification-outbox";
+import { refundPaidPaymentsForTraining } from "@/lib/payment-refunds";
 import { formatRiga } from "@/lib/time";
 
 type Result = { ok: true } | { ok: false; error: string };
@@ -229,11 +231,15 @@ export async function setUserRole(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("users")
     .update({ role })
-    .eq("id", userId);
+    .eq("id", userId)
+    .eq("identity_status", "identified")
+    .select("id")
+    .maybeSingle();
   if (error) return { ok: false, error: error.message };
+  if (!updated) return { ok: false, error: "Neidentificētam dalībniekam nevar piešķirt konta lomu." };
   revalidatePath("/admin/users");
   return { ok: true };
 }
@@ -263,8 +269,14 @@ export async function setUserPlayerType(
     }
   }
 
-  const { error } = await supabase.from("users").update(update).eq("id", userId);
+  const { data: updated, error } = await supabase.from("users")
+    .update(update)
+    .eq("id", userId)
+    .eq("identity_status", "identified")
+    .select("id")
+    .maybeSingle();
   if (error) return { ok: false, error: error.message };
+  if (!updated) return { ok: false, error: "Neidentificētam dalībniekam nevar mainīt apmaksas statusu." };
   revalidatePath("/admin/users");
   revalidatePath("/admin/trainings", "layout");
   return { ok: true };
@@ -298,11 +310,29 @@ export async function markPaymentPaid(paymentId: string): Promise<Result> {
   await requireAdmin();
   if (!UUID_RE.test(paymentId)) return badId();
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data: payment, error } = await supabase
     .from("payments")
     .update({ status: "paid", paid_at: new Date().toISOString() })
-    .eq("id", paymentId);
+    .eq("id", paymentId)
+    .eq("status", "pending")
+    .select("id")
+    .maybeSingle();
   if (error) return { ok: false, error: error.message };
+  if (!payment) return { ok: false, error: "Maksājums nav gaidošā statusā." };
+
+  // Manuālais pārskaitījums grupas paziņojumu saņem tikai pēc admina
+  // apstiprinājuma, nevis brīdī, kad spēlētājs paziņo par pārskaitījumu.
+  const { data: registration } = await supabase
+    .from("registrations")
+    .select("id")
+    .eq("payment_id", paymentId)
+    .maybeSingle();
+  if (registration) {
+    // Datubāzes trigger jau tajā pašā maksājuma transakcijā ievietoja outbox
+    // notikumu. Šeit tikai mēģinām to piegādāt uzreiz.
+    await deliverRegistrationUpdateNotifications({ registrationId: registration.id });
+  }
+
   revalidatePath("/admin/payments");
   revalidatePath("/admin/trainings", "layout");
   return { ok: true };
@@ -330,6 +360,88 @@ export async function rejectPayment(paymentId: string): Promise<Result> {
   return { ok: true };
 }
 
+/**
+ * Sūta WhatsApp katram apstiprinātam spēlētājam, kuram piešķirta komanda,
+ * informējot, kuru kreklu paņemt līdzi. Idempotence: ja spēlētāja komanda
+ * sakrīt ar `team_notified_for`, ziņa atkārtoti netiek sūtīta. Atgriež
+ * sūtīto / izlaisto / kļūdaino skaitus, lai admins redz, kas notika.
+ */
+export async function broadcastTeamAssignments(
+  trainingId: string
+): Promise<
+  | { ok: true; sent: number; skipped: number; missingTeam: number; failed: number }
+  | { ok: false; error: string }
+> {
+  await requireAdmin();
+  if (!UUID_RE.test(trainingId)) return { ok: false, error: "Nederīgs ID." };
+
+  const supabase = await createClient();
+
+  const { data: training } = await supabase
+    .from("trainings")
+    .select("date")
+    .eq("id", trainingId)
+    .maybeSingle();
+  if (!training) return { ok: false, error: "Treniņš nav atrasts." };
+
+  const { data: regs } = await supabase
+    .from("registrations")
+    .select("id, user_id, team, team_notified_for")
+    .eq("training_id", trainingId)
+    .eq("status", "confirmed");
+
+  type Reg = {
+    id: string;
+    user_id: string;
+    team: "black" | "white" | null;
+    team_notified_for: "black" | "white" | null;
+  };
+  const list = ((regs ?? []) as Reg[]) ?? [];
+
+  const dateLabel = formatRiga(training.date + "T20:00:00Z", "EEEE, d. MMMM");
+
+  let sent = 0;
+  let skipped = 0;
+  let missingTeam = 0;
+  let failed = 0;
+
+  await Promise.all(
+    list.map(async (r) => {
+      if (r.team !== "black" && r.team !== "white") {
+        missingTeam += 1;
+        return;
+      }
+      if (r.team_notified_for === r.team) {
+        skipped += 1;
+        return;
+      }
+      const teamLabel = r.team === "black" ? "Melnajā" : "Baltajā";
+      const shirt = r.team === "black" ? "MELNU" : "BALTU";
+      const ok = await notifyUser(
+        r.user_id,
+        `🎽 3SM ${dateLabel}: tu spēlē ${teamLabel} komandā. Paņem līdzi ${shirt} kreklu. 20:00 Olimpiskajā centrā.`,
+        "team_assigned"
+      );
+      if (ok) {
+        sent += 1;
+        await supabase
+          .from("registrations")
+          .update({
+            team_notified_for: r.team,
+            team_notified_at: new Date().toISOString(),
+          })
+          .eq("id", r.id);
+      } else {
+        failed += 1;
+      }
+    })
+  );
+
+  revalidatePath(`/admin/trainings/${trainingId}/teams`);
+  revalidatePath(`/training/${trainingId}`);
+  return { ok: true, sent, skipped, missingTeam, failed };
+}
+
 export async function cancelTraining(trainingId: string): Promise<Result> {
   await requireAdmin();
   if (!UUID_RE.test(trainingId)) return badId();
@@ -342,7 +454,7 @@ export async function cancelTraining(trainingId: string): Promise<Result> {
   if (error) return { ok: false, error: error.message };
 
   // Atmaksā visus paid Stripe maksājumus šim treniņam.
-  await refundPaymentsForTraining(trainingId);
+  await refundPaidPaymentsForTraining(trainingId);
 
   // Paziņojums grupai (best-effort).
   const { data: t } = await supabase
@@ -362,41 +474,4 @@ export async function cancelTraining(trainingId: string): Promise<Result> {
   revalidatePath("/admin/payments");
   revalidatePath("/");
   return { ok: true };
-}
-
-/**
- * Iziet caur visiem `paid` Stripe maksājumiem treniņam un izraisa
- * refund'u. Manuālie Swedbank maksājumi tiek tikai atzīmēti — admin
- * pats atgriež naudu pa banku.
- */
-async function refundPaymentsForTraining(trainingId: string): Promise<void> {
-  const supabase = await createClient();
-  const { data: payments } = await supabase
-    .from("payments")
-    .select("id, provider, status, stripe_payment_intent_id")
-    .eq("training_id", trainingId)
-    .eq("status", "paid");
-
-  if (!payments || payments.length === 0) return;
-
-  // Lazy import, lai Stripe SDK netiek loaded, kad nav nepieciešams.
-  const { getStripe } = await import("@/lib/stripe");
-
-  for (const p of payments) {
-    if (p.provider === "stripe" && p.stripe_payment_intent_id) {
-      try {
-        const stripe = getStripe();
-        await stripe.refunds.create({
-          payment_intent: p.stripe_payment_intent_id,
-        });
-      } catch (e) {
-        console.error("[refund] failed for", p.id, e);
-        continue;
-      }
-    }
-    await supabase
-      .from("payments")
-      .update({ status: "refunded", refunded_at: new Date().toISOString() })
-      .eq("id", p.id);
-  }
 }

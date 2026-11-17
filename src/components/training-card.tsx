@@ -181,7 +181,9 @@ function PlayerList({
                 {r.user.nickname?.trim() || r.user.name || "—"}
               </p>
               <p className="text-xs text-neutral-500">
-                {r.user.player_type === "core" ? "Pamatsastāvs" : "Rezervists"}
+                {r.user.identity_status === "unidentified"
+                  ? "Neidentificēts · Google Sheets"
+                  : r.user.player_type === "core" ? "Pamatsastāvs" : "Rezervists"}
                 {r.team && ` · ${r.team === "black" ? "Melnā" : "Baltā"}`}
               </p>
             </div>
