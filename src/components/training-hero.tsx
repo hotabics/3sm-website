@@ -174,7 +174,7 @@ export function TrainingHero(props: Props) {
       </p>
       <p className="mt-1 text-xs text-neutral-500">
         {isOpen
-          ? `Pieteikties un atteikties var līdz ${props.closesLabel}`
+          ? `Pieteikšanās un atteikšanās noslēdzas ${props.closesLabel}`
           : props.trainingStatus === "cancelled"
             ? "Treniņš atcelts"
             : "Sastāvs fiksēts"}

@@ -64,8 +64,8 @@ export default async function HomePage({
         ) : (
           <TrainingHero
             trainingId={training.id}
-            dayLabel={formatRiga(training.date + "T12:00:00Z", "EEEE")}
-            dateLabel={formatRiga(training.date + "T12:00:00Z", "d. MMMM")}
+            dayLabel={formatRiga(training.date + "T12:00:00Z", "cccc")}
+            dateLabel={formatRiga(training.date + "T12:00:00Z", "d. LLLL")}
             timeLabel={`${training.start_time.slice(0, 5)}–${training.end_time.slice(0, 5)}`}
             location={training.location}
             closesLabel={formatRiga(training.registration_closes_at, "EEEE HH:mm")}
