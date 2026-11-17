@@ -126,12 +126,14 @@ begin
 
       if not found then
         v_result := jsonb_build_object('state', 'rejected', 'message', 'Spēlētājs nav atrasts.');
-      elsif v_player_type <> 'core' or v_paid_until is null or v_paid_until < current_date then
-        v_result := jsonb_build_object(
-          'state', 'needs_payment',
-          'message', 'Šim pieteikumam nepieciešama apmaksa 3sm.lv.'
-        );
       else
+        -- Apmaksa nav priekšnoteikums (00005): neapmaksāts spēlētājs tiek
+        -- pieņemts, un sastāva fiksēšanas cron viņam uzliek parādu.
+        -- Fiksētā komanda tikai pamatsastāvam ar derīgu sezonas maksu.
+        if v_player_type <> 'core' or v_paid_until is null or v_paid_until < current_date then
+          v_fixed_team := null;
+        end if;
+
         insert into public.registrations (
           training_id, user_id, status, team, queue_position, cancelled_at, registered_at
         ) values (

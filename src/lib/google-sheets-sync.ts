@@ -27,7 +27,6 @@ type RegistrationRow = {
   user_id: string;
   status: "confirmed" | "queue" | "cancelled";
   registered_at: string;
-  payment: { status: "pending" | "paid" | "failed" | "refunded" } | null;
   user: { name: string | null; nickname: string | null; identity_status: "identified" | "unidentified" } | null;
 };
 
@@ -46,7 +45,6 @@ async function getSnapshot(trainingId: string, sheetNamesByUser: Map<string, str
     .from("registrations")
     .select(
       `user_id, status, registered_at,
-       payment:payments(status),
        user:users(name, nickname, identity_status)`
     )
     .eq("training_id", trainingId)
@@ -55,9 +53,9 @@ async function getSnapshot(trainingId: string, sheetNamesByUser: Map<string, str
 
   if (error) throw new Error(error.message);
 
-  const eligible = ((registrations ?? []) as unknown as RegistrationRow[]).filter(
-    (row) => row.payment === null || row.payment.status === "paid"
-  );
+  // Arī neapmaksāti pieteikumi ieņem vietu (parādu modelis), tāpēc Sheets
+  // rāda visus aktīvos pieteikumus.
+  const eligible = (registrations ?? []) as unknown as RegistrationRow[];
   if (eligible.length === 0) return { confirmedNames: [], queueNames: [] };
 
   // Eksportā lietojam jau apstiprinātu Sheets aliasu. Esošajā kolonnā
@@ -201,21 +199,8 @@ async function importNewPlayersFromColumn(map: MapRow) {
     throw new Error("Sheets kolonnā ir jauni spēlētāji, bet treniņa reģistrācija ir slēgta.");
   }
 
-  const knownIds = toAdd.filter((entry) => !entry.isGuest && entry.userId).map((entry) => entry.userId!);
-  const { data: users, error: usersError } = knownIds.length
-    ? await admin.from("users").select("id, player_type, semester_paid_until").in("id", knownIds)
-    : { data: [], error: null };
-  if (usersError) throw new Error(usersError.message);
-  const userById = new Map((users ?? []).map((user) => [user.id, user]));
-  const today = new Date().toISOString().slice(0, 10);
-  const needsPayment = toAdd.filter((entry) => {
-    if (entry.isGuest) return false;
-    const user = entry.userId ? userById.get(entry.userId) : null;
-    return !user || user.player_type !== "core" || !user.semester_paid_until || user.semester_paid_until < today;
-  });
-  if (needsPayment.length) {
-    throw new Error(`Šiem Sheets spēlētājiem jāpiesakās un jāapmaksā 3SM lapā: ${needsPayment.map((entry) => `${entry.cell} ${entry.displayName}`).join(", ")}.`);
-  }
+  // Apmaksa nav priekšnoteikums: neapmaksāti spēlētāji tiek importēti, un
+  // sastāva fiksēšanas cron viņiem uzliek parādu.
 
   let imported = 0;
   let unidentified = 0;

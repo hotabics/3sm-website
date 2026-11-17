@@ -52,7 +52,8 @@ npm run dev
 
 ## WhatsApp grupas paziņojumi
 
-Katrs apmaksāts vai pamatsastāva spēlētāja pieteikums izveido outbox notikumu.
+Katrs aktīvs pieteikums bez gaidoša maksājuma (arī neapmaksāts) un katrs
+maksājuma apstiprinājums izveido outbox notikumu.
 Ziņā ir spēlētāja iesauka/vārds, aktīvo pieteikumu skaits, sastāvs, rinda,
 brīvās vietas un laiks līdz pieteikšanās beigām. Notikums tiek sūtīts uzreiz
 un kļūmes gadījumā to atkārto `/api/cron/notification-retry`.
@@ -77,8 +78,9 @@ piesaistīto kolonnu: 8.–21. rinda ir pamatsastāvs, 22. rinda tiek izlaista,
 no 23. rindas uz leju ir rezerve. 7. rindas skaitlis rāda tikai pamatsastāvu.
 Vārds bez sasaistīta 3SM konta tiek importēts kā **neidentificēts dalībnieks**:
 tam ir redzams profils un pieteikums, bet nav Auth konta, e-pasta vai piekļuves
-privātām darbībām. Identificēta spēlētāja apmaksas kļūmes vai dublēta vārda
-gadījumā atbilde ietver `scanErrors`, un šī kolonna netiek pārrakstīta.
+privātām darbībām. Identificēti spēlētāji tiek importēti arī bez apmaksas —
+sastāva fiksēšanā viņiem rodas parāds. Dublēta vārda vai nesasaistīta
+spēlētāja gadījumā atbilde ietver `scanErrors`, un šī kolonna netiek pārrakstīta.
 Pēc veiksmīgas nolasīšanas un importa Sheets tiek atjaunots no Supabase.
 Eksportā tiek saglabāts kolonnā jau izmantotais
 vārda variants vai izvēlēts apstiprināts alias; bez aliasa vietnes pieteikums
@@ -126,8 +128,8 @@ kolonnas. Komanda neizdrukā slepenās atslēgas un parāda `imported`, `sent`,
 vārdus vai to sasaisti un palaid komandu vēlreiz; kļūdainā kolonna netiek
 pārrakstīta. Neizsauc šo komandu ar īsto tabulu, kamēr tests nav pārbaudīts.
 
-Skripts neizveido pieteikumu, ja datums nav kartēts, reģistrācija ir slēgta
-vai identificētam spēlētājam vajadzīga individuāla apmaksa. Vārds bez
+Skripts neizveido pieteikumu, ja datums nav kartēts vai reģistrācija ir
+slēgta. Apmaksa nav priekšnoteikums. Vārds bez
 sasaistes tiek saglabāts kā neidentificēts, nevis piesaistīts uzminētam
 profilam. `google-sheets-sync` cron drīkst
 darboties arī tad, kad sinhronizācija ir izslēgta — gaidošie notikumi paliek
