@@ -4,12 +4,19 @@ import { SiteHeader } from "@/components/site-header";
 import { Jersey } from "@/components/jersey";
 import { getCurrentProfile } from "@/lib/auth";
 import { computeStats } from "@/lib/stats";
+import { getMyDebts } from "@/lib/debts";
+import { formatEur } from "@/lib/money";
+import { formatRiga } from "@/lib/time";
+import { PayDebtButton } from "./pay-debt-button";
 
 export default async function ProfilePage() {
   const profile = await getCurrentProfile();
   if (!profile) redirect("/login");
 
-  const stats = await computeStats(profile.id);
+  const [stats, debts] = await Promise.all([
+    computeStats(profile.id),
+    getMyDebts(profile.id),
+  ]);
   const me = stats[0];
 
   return (
@@ -45,6 +52,37 @@ export default async function ProfilePage() {
             </div>
           </div>
         </div>
+
+        {debts.length > 0 && (
+          <section id="maksajumi" className="scroll-mt-6">
+            <h2 className="mb-3 text-xs font-medium uppercase tracking-widest text-neutral-500">
+              Neapmaksātie treniņi
+            </h2>
+            <ul className="divide-y divide-neutral-900 rounded-2xl border border-neutral-800 bg-neutral-950/50">
+              {debts.map((d) => {
+                const dateLabel = formatRiga(d.date + "T12:00:00Z", "EEEE, d. MMMM");
+                return (
+                  <li key={d.registrationId} className="flex items-center justify-between gap-3 p-4">
+                    <div>
+                      <p className="capitalize">{dateLabel}</p>
+                      <p className="text-sm text-neutral-500">
+                        {formatEur(d.amountCents)}
+                        {d.pendingTransfer && " · pārskaitījums gaida apstiprinājumu"}
+                      </p>
+                    </div>
+                    {!d.pendingTransfer && (
+                      <PayDebtButton
+                        trainingId={d.trainingId}
+                        amountLabel={formatEur(d.amountCents)}
+                        dateLabel={dateLabel}
+                      />
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
 
         <section>
           <h2 className="mb-3 text-xs font-medium uppercase tracking-widest text-neutral-500">

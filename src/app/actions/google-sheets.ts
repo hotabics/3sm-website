@@ -63,7 +63,7 @@ export async function previewGoogleSheetColumn(mapId: string): Promise<PreviewRe
   }
 
   try {
-    // Pirms 00009 migrācijas DB vēl glabā 24. rindu. Priekšskatījumā jau
+    // Pirms 00011 migrācijas DB vēl glabā 24. rindu. Priekšskatījumā jau
     // parādām īsto 23. rindu, nemainot DB vai Sheets.
     const previewMap = { ...map, queue_start_row: 23 } as GoogleSheetTrainingMap;
     const values = await readGoogleSheetColumnValues(previewMap);

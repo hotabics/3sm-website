@@ -55,7 +55,7 @@ export function GoogleSheetColumnPreview({ mapId }: { mapId: string }) {
             {" · "}{preview.rows.filter((row) => row.sheetStatus === "queue").length} rezervē.
             {preview.siteOnly.length > 0 && ` ${preview.siteOnly.length} aktīvi 3SM pieteikumi nav šajā Sheets kolonnā.`}
             {preview.rows.some((row) => row.siteStatusMismatch) && " Dažiem spēlētājiem pamatsastāva/rezerves statuss atšķiras."}
-            {preview.needsMigration && " Pirms importa jāpiemēro 00009 un 00010 datubāzes migrācija."}
+            {preview.needsMigration && " Pirms importa jāpiemēro 00011 un 00012 datubāzes migrācija."}
             {!preview.canImport && !preview.needsMigration && " Vispirms jānovērš zemāk norādītās kļūdas."}
           </p>
           {preview.rows.length === 0 ? (

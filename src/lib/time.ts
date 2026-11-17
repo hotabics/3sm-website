@@ -1,4 +1,5 @@
 import { fromZonedTime, toZonedTime, format } from "date-fns-tz";
+import { lv } from "date-fns/locale";
 import { addDays, nextThursday, setHours, setMinutes, setSeconds, setMilliseconds, isThursday, isAfter } from "date-fns";
 
 export const RIGA_TZ = "Europe/Riga";
@@ -49,7 +50,7 @@ export function opensAtFor(trainingDate: Date): Date {
 
 export function formatRiga(date: Date | string, pattern = "EEEE, d. MMMM, HH:mm"): string {
   const d = typeof date === "string" ? new Date(date) : date;
-  return format(toZonedTime(d, RIGA_TZ), pattern, { timeZone: RIGA_TZ });
+  return format(toZonedTime(d, RIGA_TZ), pattern, { timeZone: RIGA_TZ, locale: lv });
 }
 
 export function formatDateOnly(date: string): string {

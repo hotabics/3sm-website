@@ -11,7 +11,7 @@ jāpārbauda dublētu pieteikumu, atcelšanas un maksājumu scenāriji.
    izslēdz `.env*`, `backups/` un `supabase/.temp/` no Vercel augšupielādes.
 2. Palaid `npm run typecheck`, `npm test` un `npm run build`.
 3. Pārbaudi `supabase migration list`: attālajā datubāzē vajadzīgas visas
-   migrācijas līdz `00010`, ieskaitot. Pirms `db push` pārskati migrācijas un
+   migrācijas līdz `00013`, ieskaitot. Pirms `db push` pārskati migrācijas un
    izveido datubāzes rezerves kopiju. Nekad neatzīmē migrāciju kā piemērotu,
    ja tās SQL nav izpildīts.
 4. Vercel **Production** iestatījumos pievieno

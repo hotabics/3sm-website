@@ -32,12 +32,15 @@ npm run dev
    - `supabase/migrations/00002_trainings.sql`
    - `supabase/migrations/00003_results.sql`
    - `supabase/migrations/00004_payments.sql`
-   - `supabase/migrations/00005_team_notifications.sql`
-   - `supabase/migrations/00006_awards.sql`
-   - `supabase/migrations/00007_registration_safety_and_notification_outbox.sql`
-   - `supabase/migrations/00008_google_sheets_reservations.sql`
-   - `supabase/migrations/00009_google_sheets_full_column_import.sql`
-   - `supabase/migrations/00010_google_sheet_unidentified_players.sql`
+   - `supabase/migrations/00005_optional_payment.sql` (maksa neobligāta, parādi)
+   - `supabase/migrations/00006_revoke_trigger_fn_execute.sql`
+   - `supabase/migrations/00007_team_notifications.sql`
+   - `supabase/migrations/00008_awards.sql`
+   - `supabase/migrations/00009_registration_safety_and_notification_outbox.sql`
+   - `supabase/migrations/00010_google_sheets_reservations.sql`
+   - `supabase/migrations/00011_google_sheets_full_column_import.sql`
+   - `supabase/migrations/00012_google_sheet_unidentified_players.sql`
+   - `supabase/migrations/00013_register_for_training_optional_payment.sql`
 5. Lai izveidotu administratora kontu pēc pirmā logina:
    ```sql
    update public.users set role = 'admin' where email = 'ivo.capins@gmail.com';
@@ -116,7 +119,7 @@ Testa kopijai izmanto `GOOGLE_SHEETS_TEST_SPREADSHEET_ID`. Pirms ieslēgt
    rakstošās sinhronizācijas izlabo dublētos vārdus un apzināti pārbaudi,
    kuri tiks importēti kā neidentificēti dalībnieki.
 
-Pēc `00009` un `00010` migrāciju piemērošanas un ar darbojošos `npm run dev` palaid
+Pēc `00011` un `00012` migrāciju piemērošanas un ar darbojošos `npm run dev` palaid
 `npm run sheets:sync`, lai lokāli vienreiz noskenētu visas piesaistītās datuma
 kolonnas. Komanda neizdrukā slepenās atslēgas un parāda `imported`, `sent`,
 `held` un `scanErrors`. Ja `scanErrors` nav tukšs, izlabo norādītos Sheets

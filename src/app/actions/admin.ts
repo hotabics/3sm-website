@@ -8,6 +8,7 @@ import { notifyGroup, notifyUser } from "@/lib/notifications";
 import { deliverRegistrationUpdateNotifications } from "@/lib/notification-outbox";
 import { refundPaidPaymentsForTraining } from "@/lib/payment-refunds";
 import { formatRiga } from "@/lib/time";
+import { amountDueFor } from "@/lib/debts";
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -42,7 +43,7 @@ export async function createTraining(formData: FormData): Promise<Result> {
   // Paziņojums grupai par atvērto reģistrāciju (best-effort).
   const dateLabel = formatRiga(date + "T20:00:00Z", "EEEE, d. MMMM");
   await notifyGroup(
-    `🟣 3SM: reģistrācija atvērta uz ${dateLabel} treniņu (20:00–21:30, ${location}). Piesakies: https://3sm.lv`,
+    `🟣 3SM: reģistrācija atvērta uz ${dateLabel} treniņu (20:00–21:30, ${location}). Piesakies ar vienu klikšķi: https://3sm.lv/?naku=1`,
     "registration_open"
   );
 
@@ -57,11 +58,28 @@ export async function approveRegistration(
   await requireAdmin();
   if (!UUID_RE.test(registrationId)) return badId();
   const supabase = await createClient();
+  // Ja sastāvs jau fiksēts, apstiprinātajam uzreiz uzliekam maksu (ja jāmaksā).
+  const { data: reg } = await supabase
+    .from("registrations")
+    .select(
+      "training:trainings(status), user:users(player_type, semester_paid_until)"
+    )
+    .eq("id", registrationId)
+    .maybeSingle();
+  const regInfo = (reg ?? null) as unknown as {
+    training: { status: string } | null;
+    user: { player_type: "core" | "reserve"; semester_paid_until: string | null } | null;
+  } | null;
+  const locked =
+    regInfo?.training?.status === "closed" ||
+    regInfo?.training?.status === "completed";
+
   const { error } = await supabase
     .from("registrations")
     .update({
       status: "confirmed",
       cancelled_at: null,
+      ...(locked ? { amount_due_cents: amountDueFor(regInfo?.user ?? null) } : {}),
     })
     .eq("id", registrationId);
   if (error) return { ok: false, error: error.message };
@@ -342,7 +360,8 @@ export async function rejectPayment(paymentId: string): Promise<Result> {
   await requireAdmin();
   if (!UUID_RE.test(paymentId)) return badId();
   const supabase = await createClient();
-  // Atzīmē kā failed un atceļ saistīto reģistrāciju, ja tāda ir.
+  // Atzīmē kā failed un atsaista no reģistrācijas. Pieteikums paliek spēkā —
+  // maksājums nav obligāts; ja spēlēja, tas atkal parādās kā parāds.
   const { error: payErr } = await supabase
     .from("payments")
     .update({ status: "failed" })
@@ -351,7 +370,7 @@ export async function rejectPayment(paymentId: string): Promise<Result> {
 
   const { error: regErr } = await supabase
     .from("registrations")
-    .update({ status: "cancelled", cancelled_at: new Date().toISOString() })
+    .update({ payment_id: null })
     .eq("payment_id", paymentId);
   if (regErr) return { ok: false, error: regErr.message };
 
@@ -473,5 +492,64 @@ export async function cancelTraining(trainingId: string): Promise<Result> {
   revalidatePath("/admin/trainings", "layout");
   revalidatePath("/admin/payments");
   revalidatePath("/");
+  return { ok: true };
+}
+
+/**
+ * Admins atzīmē parādu kā nomaksātu (skaidrā naudā vai pārskaitījums, kas
+ * netika pieteikts lietotnē): izveido 'paid' maksājumu un piesaista.
+ */
+export async function markDebtPaid(registrationId: string): Promise<Result> {
+  await requireAdmin();
+  if (!UUID_RE.test(registrationId)) return badId();
+  const supabase = await createClient();
+
+  const { data: reg } = await supabase
+    .from("registrations")
+    .select("id, user_id, training_id, amount_due_cents, payment_id")
+    .eq("id", registrationId)
+    .maybeSingle();
+  if (!reg || reg.amount_due_cents <= 0) {
+    return { ok: false, error: "Parāds nav atrasts." };
+  }
+
+  // Ja jau ir gaidošs Swedbank maksājums — vienkārši apstiprinām to.
+  if (reg.payment_id) {
+    const { data: pay } = await supabase
+      .from("payments")
+      .select("id, status")
+      .eq("id", reg.payment_id)
+      .maybeSingle();
+    if (pay?.status === "paid") return { ok: true };
+    if (pay?.status === "pending") {
+      return markPaymentPaid(pay.id);
+    }
+  }
+
+  const { data: payment, error: payErr } = await supabase
+    .from("payments")
+    .insert({
+      user_id: reg.user_id,
+      type: "single_training",
+      amount_cents: reg.amount_due_cents,
+      currency: "eur",
+      provider: "manual_swedbank",
+      status: "paid",
+      paid_at: new Date().toISOString(),
+      training_id: reg.training_id,
+    })
+    .select("id")
+    .single();
+  if (payErr || !payment) {
+    return { ok: false, error: payErr?.message ?? "Neizdevās saglabāt." };
+  }
+
+  const { error } = await supabase
+    .from("registrations")
+    .update({ payment_id: payment.id })
+    .eq("id", reg.id);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/admin/payments");
   return { ok: true };
 }

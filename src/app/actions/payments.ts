@@ -14,16 +14,16 @@ type Result =
   | { ok: false; error: string };
 
 /**
- * Sāk maksāšanas plūsmu rezervistam — vai nu Stripe Checkout, vai
- * manuāls Swedbank pārskaitījums. Reģistrācijas ieraksts tiek izveidots
- * uzreiz ar status='queue' un linked payment.
+ * Samaksā par treniņu — neobligāti, jebkurā brīdī: uzreiz pēc pieteikšanās
+ * vai vēlāk kā parādu. Vajag esošu (neatceltu) reģistrāciju.
  *
- * - Stripe path: izveido `payments` rindu (pending), Checkout sesiju,
- *   atgriež URL. Reģistrācija tiek aktivizēta tikai pēc webhook'a.
- * - Swedbank path: izveido `payments` rindu (pending, manual_swedbank)
- *   un `registrations` rindu uzreiz, lai admin redz un var apstiprināt.
+ * - Stripe: izveido `payments` (pending) + Checkout sesiju, atgriež URL;
+ *   webhook atzīmē kā paid.
+ * - Swedbank: izveido `payments` (pending), admins apstiprina, kad redz
+ *   pārskaitījumu.
+ * Abos gadījumos maksājums tiek piesaistīts reģistrācijai (`payment_id`).
  */
-export async function startReservePayment(
+export async function payForTraining(
   trainingId: string,
   method: "stripe" | "manual_swedbank"
 ): Promise<Result> {
@@ -42,49 +42,39 @@ export async function startReservePayment(
 
   const { data: training } = await supabase
     .from("trainings")
-    .select("id, date, status, registration_closes_at")
+    .select("id, date, status")
     .eq("id", trainingId)
     .maybeSingle();
 
   if (!training) return { ok: false, error: "Treniņš nav atrasts." };
-  if (training.status !== "open") {
-    return { ok: false, error: "Reģistrācija slēgta." };
-  }
-  if (new Date(training.registration_closes_at) <= new Date()) {
-    return { ok: false, error: "Reģistrācijas laiks beidzies." };
+  if (training.status === "cancelled") {
+    return { ok: false, error: "Treniņš atcelts — nav par ko maksāt." };
   }
 
-  // Vai jau eksistē aktīva reģistrācija šim treniņam?
-  const { data: existing } = await supabase
+  const { data: reg } = await supabase
     .from("registrations")
-    .select("id, status")
+    .select("id, status, payment:payments!registrations_payment_fkey(id, status, provider)")
     .eq("training_id", trainingId)
     .eq("user_id", user.id)
     .neq("status", "cancelled")
     .maybeSingle();
 
-  if (existing) {
-    return { ok: false, error: "Tu jau esi pieteicies šim treniņam." };
+  if (!reg) {
+    return { ok: false, error: "Vispirms piesakies uz treniņu." };
+  }
+  const current = (reg.payment ?? null) as unknown as
+    | { id: string; status: string; provider: string }
+    | null;
+  if (current?.status === "paid") {
+    return { ok: false, error: "Par šo treniņu jau samaksāts." };
+  }
+  if (current?.status === "pending" && current.provider === "manual_swedbank") {
+    return { ok: false, error: "Pārskaitījums jau gaida apstiprinājumu." };
   }
 
-  // Service role klients — webhook un servera puses mutācijām.
+  // Service role klients — maksājumu rindas un payment_id raksta tikai serveris.
   const admin = createAdminClient();
 
-  // Stripe Checkout vēl neveido registrations rindu. Bez šīs pārbaudes viens
-  // lietotājs varētu atvērt vairākas paralēlas maksājuma sesijas.
-  const { data: pendingPayment } = await admin
-    .from("payments")
-    .select("id")
-    .eq("user_id", user.id)
-    .eq("training_id", trainingId)
-    .eq("type", "single_training")
-    .eq("status", "pending")
-    .maybeSingle();
-  if (pendingPayment) {
-    return { ok: false, error: "Tev jau ir gaidošs maksājums par šo treniņu." };
-  }
-
-  // Maksājuma rinda (pending).
   const { data: payment, error: payErr } = await admin
     .from("payments")
     .insert({
@@ -102,17 +92,21 @@ export async function startReservePayment(
     return { ok: false, error: payErr?.message ?? "Neizdevās izveidot maksājumu." };
   }
 
+  // Iepriekšējais nepabeigtais kartes maksājums vairs nav aktuāls.
+  if (current?.status === "pending") {
+    await admin.from("payments").update({ status: "failed" }).eq("id", current.id);
+  }
+
+  const { error: linkErr } = await admin
+    .from("registrations")
+    .update({ payment_id: payment.id })
+    .eq("id", reg.id);
+  if (linkErr) return { ok: false, error: linkErr.message };
+
   if (method === "manual_swedbank") {
-    // Reģistrē uzreiz, gaida admin manuālu apstiprinājumu.
-    const { error: regErr } = await admin.from("registrations").insert({
-      training_id: trainingId,
-      user_id: user.id,
-      status: "queue",
-      payment_id: payment.id,
-    });
-    if (regErr) return { ok: false, error: regErr.message };
     revalidatePath("/");
-    revalidatePath(`/training/${trainingId}`);
+    revalidatePath("/profile");
+    revalidatePath("/admin/payments");
 
     const { data: profile } = await admin
       .from("users")
@@ -123,7 +117,7 @@ export async function startReservePayment(
       profile?.nickname?.trim() || profile?.name?.trim() || user.email || "Spēlētājs";
     const dateLabel = formatRiga(training.date + "T20:00:00Z", "EEEE, d. MMMM");
     await notifyAdmins(
-      `🆕 3SM: ${displayName} pieteicās ${dateLabel} treniņam (rezervists, Swedbank — gaida apstiprinājumu).`,
+      `💶 3SM: ${displayName} samaksāja par ${dateLabel} treniņu ar Swedbank pārskaitījumu — gaida apstiprinājumu.`,
       "admin_new_registration"
     );
     return { ok: true };
@@ -147,7 +141,7 @@ export async function startReservePayment(
           unit_amount: SINGLE_TRAINING_PRICE_CENTS,
           product_data: {
             name: `3SM treniņš — ${dateLabel}`,
-            description: "Vienas spēles maksa rezervistam.",
+            description: "Vienas spēles maksa.",
           },
         },
       },

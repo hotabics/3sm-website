@@ -115,7 +115,7 @@ async function mark(
  */
 async function importNewPlayersFromColumn(map: MapRow) {
   if (map.roster_start_row !== 8 || map.roster_end_row !== 21 || map.queue_start_row !== 23) {
-    throw new Error("Kartējumam jābūt: spēlētāji 8.–21. rindā, 22. rinda izlaižama, rezerve no 23. rindas. Vispirms piemēro 00009 migrāciju.");
+    throw new Error("Kartējumam jābūt: spēlētāji 8.–21. rindā, 22. rinda izlaižama, rezerve no 23. rindas. Vispirms piemēro 00011 migrāciju.");
   }
   const testSpreadsheetId = process.env.GOOGLE_SHEETS_TEST_SPREADSHEET_ID;
   if (testSpreadsheetId && map.spreadsheet_id !== testSpreadsheetId) {

@@ -4,7 +4,10 @@ import { createClient } from "@/lib/supabase/server";
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/";
+  const rawNext = searchParams.get("next") ?? "/";
+  // Tikai iekšējas saites — bez open redirect uz svešu domēnu.
+  const next =
+    rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/";
 
   if (code) {
     const supabase = await createClient();
@@ -21,7 +24,9 @@ export async function GET(request: Request) {
           .single();
 
         const needsOnboarding = !profile?.name || !profile?.phone;
-        const target = needsOnboarding ? "/onboarding" : next;
+        const target = needsOnboarding
+          ? `/onboarding?next=${encodeURIComponent(next)}`
+          : next;
         return NextResponse.redirect(`${origin}${target}`);
       }
     }

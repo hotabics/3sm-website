@@ -85,19 +85,42 @@ export async function getRegistrationsForTraining(
   return (data as unknown as RegistrationWithUser[]) ?? [];
 }
 
+export type MyRegistration = {
+  id: string;
+  status: "confirmed" | "queue";
+  team: string | null;
+  paymentStatus: "paid" | "pending" | null;
+  paymentProvider: "stripe" | "manual_swedbank" | null;
+};
+
 export async function getMyRegistration(
   trainingId: string,
   userId: string
-): Promise<{ id: string; status: string; team: string | null } | null> {
+): Promise<MyRegistration | null> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("registrations")
-    .select("id, status, team")
+    .select(
+      "id, status, team, payment:payments!registrations_payment_fkey(status, provider)"
+    )
     .eq("training_id", trainingId)
     .eq("user_id", userId)
     .neq("status", "cancelled")
     .maybeSingle();
-  return data;
+  if (!data) return null;
+  const pay = (data.payment ?? null) as unknown as {
+    status: string;
+    provider: "stripe" | "manual_swedbank";
+  } | null;
+  const paymentStatus =
+    pay?.status === "paid" ? "paid" : pay?.status === "pending" ? "pending" : null;
+  return {
+    id: data.id,
+    status: data.status as "confirmed" | "queue",
+    team: data.team,
+    paymentStatus,
+    paymentProvider: paymentStatus ? pay!.provider : null,
+  };
 }
 
 /**
