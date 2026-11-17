@@ -33,6 +33,7 @@ npm run dev
    - `supabase/migrations/00003_results.sql`
    - `supabase/migrations/00004_payments.sql`
    - `supabase/migrations/00005_optional_payment.sql` (maksa neobligāta, parādi)
+   - `supabase/migrations/00006_revoke_trigger_fn_execute.sql`
 5. Lai izveidotu administratora kontu pēc pirmā logina:
    ```sql
    update public.users set role = 'admin' where email = 'ivo.capins@gmail.com';
