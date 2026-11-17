@@ -2,7 +2,16 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { OnboardingForm } from "./onboarding-form";
 
-export default async function OnboardingPage() {
+export default async function OnboardingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const { next: rawNext } = await searchParams;
+  const next =
+    rawNext && rawNext.startsWith("/") && !rawNext.startsWith("//")
+      ? rawNext
+      : "/";
   const supabase = await createClient();
   const {
     data: { user },
@@ -35,6 +44,7 @@ export default async function OnboardingPage() {
         defaultNickname={profile?.nickname ?? ""}
         defaultPhone={profile?.phone ?? ""}
         defaultWhatsapp={profile?.whatsapp ?? ""}
+        next={next}
       />
     </main>
   );

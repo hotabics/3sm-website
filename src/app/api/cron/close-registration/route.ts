@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notifyGroup, notifyUser } from "@/lib/notifications";
 import { formatRiga } from "@/lib/time";
+import { amountDueFor, isCorePaid } from "@/lib/debts";
 
 /**
  * Vercel Cron: aizver reģistrāciju treniņiem, kuriem `registration_closes_at <= now()`.
@@ -10,6 +11,8 @@ import { formatRiga } from "@/lib/time";
  *  - kopā >= min_players → top max_players paliek 'confirmed' (pamatsastāvs > rezervisti FIFO),
  *    pārējie paliek 'queue', treniņš → 'closed'
  *  - citādi → treniņš → 'cancelled', visiem rezervistiem jānotiek atmaksa (Fāze 4)
+ *  - sastāvā iekļautajiem bez derīgas sezonas maksas → amount_due_cents = 8,50 €
+ *    (parāds; maksāt var arī vēlāk)
  *
  * Auth: header `Authorization: Bearer ${CRON_SECRET}`.
  */
@@ -82,18 +85,8 @@ export async function GET(request: Request) {
 
     const today = now.slice(0, 10);
     const sorted = [...regsTyped].sort((a, b) => {
-      const ap =
-        a.user?.player_type === "core" &&
-        a.user?.semester_paid_until &&
-        a.user.semester_paid_until >= today
-          ? 0
-          : 1;
-      const bp =
-        b.user?.player_type === "core" &&
-        b.user?.semester_paid_until &&
-        b.user.semester_paid_until >= today
-          ? 0
-          : 1;
+      const ap = isCorePaid(a.user, today) ? 0 : 1;
+      const bp = isCorePaid(b.user, today) ? 0 : 1;
       if (ap !== bp) return ap - bp;
       return a.registered_at.localeCompare(b.registered_at);
     });
@@ -101,19 +94,23 @@ export async function GET(request: Request) {
     const confirmed = sorted.slice(0, t.max_players);
     const queue = sorted.slice(t.max_players);
 
-    if (confirmed.length > 0) {
+    // Sastāvā iekļautie: kam nav derīgas sezonas maksas, tiem rodas
+    // 8,50 € parāds (ja jau samaksāts uzreiz — payment_id to nosedz).
+    const groups = new Map<number, string[]>();
+    for (const r of confirmed) {
+      const due = amountDueFor(r.user, today);
+      groups.set(due, [...(groups.get(due) ?? []), r.id]);
+    }
+    for (const [due, ids] of groups) {
       await supabase
         .from("registrations")
-        .update({ status: "confirmed" })
-        .in(
-          "id",
-          confirmed.map((r) => r.id)
-        );
+        .update({ status: "confirmed", amount_due_cents: due })
+        .in("id", ids);
     }
     if (queue.length > 0) {
       await supabase
         .from("registrations")
-        .update({ status: "queue" })
+        .update({ status: "queue", amount_due_cents: 0 })
         .in(
           "id",
           queue.map((r) => r.id)

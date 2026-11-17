@@ -7,7 +7,8 @@ export const runtime = "nodejs";
 
 /**
  * Stripe webhook — apstrādā `checkout.session.completed` un atjaunina
- * `payments` + izveido `registrations` rindu, ja vēl nav.
+ * `payments`. Maksājums parasti jau piesaistīts reģistrācijai (payForTraining);
+ * ja nē — piesaista vai (vecām sesijām) izveido reģistrāciju.
  *
  * Drošība: pārbauda Stripe-Signature header pret `STRIPE_WEBHOOK_SECRET`.
  */
@@ -79,6 +80,11 @@ export async function POST(request: Request) {
           status: "queue",
           payment_id: paymentId,
         });
+      } else if (existing.status !== "cancelled") {
+        await admin
+          .from("registrations")
+          .update({ payment_id: paymentId })
+          .eq("id", existing.id);
       } else if (existing.status === "cancelled") {
         await admin
           .from("registrations")

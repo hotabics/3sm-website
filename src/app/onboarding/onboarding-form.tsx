@@ -9,6 +9,8 @@ type Props = {
   defaultNickname: string;
   defaultPhone: string;
   defaultWhatsapp: string;
+  /** Kur atgriezties pēc saglabāšanas (piem. "/?naku=1" — pieteikties). */
+  next: string;
 };
 
 export function OnboardingForm({
@@ -16,6 +18,7 @@ export function OnboardingForm({
   defaultNickname,
   defaultPhone,
   defaultWhatsapp,
+  next,
 }: Props) {
   const router = useRouter();
   const [name, setName] = useState(defaultName);
@@ -62,7 +65,7 @@ export function OnboardingForm({
       return;
     }
 
-    router.replace("/");
+    router.replace(next);
     router.refresh();
   }
 
@@ -132,7 +135,11 @@ export function OnboardingForm({
         disabled={loading}
         className="w-full rounded-lg bg-[var(--color-accent)] px-5 py-3 font-medium text-white transition hover:opacity-90 disabled:opacity-50"
       >
-        {loading ? "Saglabāju…" : "Turpināt"}
+        {loading
+          ? "Saglabāju…"
+          : next.includes("naku=1")
+            ? "Saglabāt un pieteikties"
+            : "Turpināt"}
       </button>
 
       <style jsx>{`

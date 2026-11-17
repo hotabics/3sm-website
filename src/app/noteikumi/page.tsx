@@ -92,8 +92,9 @@ export default function NoteikumiPage() {
               Pamatsastāvs ar aktīvu sezonas maksājumu piesakās uzreiz.
             </li>
             <li>
-              Rezervisti piesakās rindā un maksā 8.50 € (karte vai pārskaitījums
-              uz Swedbank).
+              Rezervisti piesakās rindā. Ja tiec sastāvā, treniņš maksā 8.50 € —
+              vari samaksāt uzreiz vai vēlāk (karte vai pārskaitījums uz
+              Swedbank).
             </li>
             <li>Vari atcelt līdz 17:00.</li>
             <li>Ja treniņš atcelts — nauda tiek atgriezta.</li>

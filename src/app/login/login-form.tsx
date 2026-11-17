@@ -62,7 +62,9 @@ export function LoginForm() {
       <div className="space-y-3">
         <h1 className="text-5xl font-bold tracking-tight">3SM</h1>
         <p className="text-neutral-400">
-          Ieej ar Google, lai piedalītos ceturtdienas treniņos.
+          {params.get("next")?.includes("naku=1")
+            ? "Ieej ar Google — un tu uzreiz būsi pieteikts uz treniņu."
+            : "Ieej ar Google, lai piedalītos ceturtdienas treniņos."}
         </p>
       </div>
 

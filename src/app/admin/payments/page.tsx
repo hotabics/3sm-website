@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { SiteHeader } from "@/components/site-header";
 import { formatRiga } from "@/lib/time";
 import { PaymentRow } from "./payment-row";
+import { DebtRow } from "./debt-row";
+import { formatEur } from "@/lib/money";
 
 type Row = {
   id: string;
@@ -32,6 +34,34 @@ export default async function AdminPaymentsPage() {
     .limit(60);
 
   const rows = ((data ?? []) as unknown) as Row[];
+
+  // Parādi: spēlēja (sastāvs fiksēts), jāmaksā, bet maksājums nav 'paid'.
+  const { data: dueData } = await supabase
+    .from("registrations")
+    .select(
+      `id, amount_due_cents,
+       user:users(name, nickname, email),
+       training:trainings(date, status),
+       payment:payments!registrations_payment_fkey(status)`
+    )
+    .eq("status", "confirmed")
+    .gt("amount_due_cents", 0);
+  type DueRow = {
+    id: string;
+    amount_due_cents: number;
+    user: Row["user"];
+    training: { date: string; status: string } | null;
+    payment: { status: string } | null;
+  };
+  const debts = (((dueData ?? []) as unknown) as DueRow[])
+    .filter(
+      (d) =>
+        (d.training?.status === "closed" || d.training?.status === "completed") &&
+        d.payment?.status !== "paid" &&
+        d.payment?.status !== "pending"
+    )
+    .sort((a, b) => (a.training!.date < b.training!.date ? 1 : -1));
+  const debtTotal = debts.reduce((s, d) => s + d.amount_due_cents, 0);
   const pending = rows.filter((r) => r.status === "pending");
   const others = rows.filter((r) => r.status !== "pending");
 
@@ -48,6 +78,34 @@ export default async function AdminPaymentsPage() {
             Treniņi →
           </Link>
         </div>
+
+        <section>
+          <h2 className="mb-3 text-xs font-medium uppercase tracking-widest text-neutral-500">
+            Parādi ({debts.length}{debtTotal > 0 ? ` · ${formatEur(debtTotal)}` : ""})
+          </h2>
+          {debts.length === 0 ? (
+            <p className="rounded-2xl border border-neutral-800 bg-neutral-950/50 p-6 text-sm text-neutral-500">
+              Visi ir norēķinājušies.
+            </p>
+          ) : (
+            <ul className="divide-y divide-neutral-900 rounded-2xl border border-neutral-800 bg-neutral-950/50">
+              {debts.map((d) => (
+                <li key={d.id} className="flex items-center justify-between gap-3 p-4 text-sm">
+                  <div>
+                    <p className="font-medium">
+                      {d.user?.nickname?.trim() || d.user?.name || d.user?.email || "—"}
+                      <span className="ml-2 text-neutral-500">{formatEur(d.amount_due_cents)}</span>
+                    </p>
+                    <p className="text-xs capitalize text-neutral-500">
+                      {formatRiga(d.training!.date + "T12:00:00Z", "EEEE, d. MMMM")}
+                    </p>
+                  </div>
+                  <DebtRow registrationId={d.id} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
 
         <Section
           title={`Gaida apstiprinājumu (${pending.length})`}
