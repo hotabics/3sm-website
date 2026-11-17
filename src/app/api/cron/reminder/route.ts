@@ -53,7 +53,7 @@ export async function GET(request: Request) {
   const targets = (users ?? []).filter((u) => !registered.has(u.id));
 
   const dateLabel = formatRiga(training.date + "T20:00:00Z", "EEEE, d. MMMM");
-  const message = `⏰ 3SM: rīt (${dateLabel}) treniņš 20:00 ${training.location}. Vēl neesi pieteicies — https://3sm.lv`;
+  const message = `⏰ 3SM: rīt (${dateLabel}) treniņš 20:00 ${training.location}. Vēl neesi pieteicies — viens klikšķis: https://3sm.lv/?naku=1`;
 
   await Promise.all(
     targets.map((u) => notifyUser(u.id, message, "reminder"))

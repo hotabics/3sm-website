@@ -41,7 +41,7 @@ export async function createTraining(formData: FormData): Promise<Result> {
   // Paziņojums grupai par atvērto reģistrāciju (best-effort).
   const dateLabel = formatRiga(date + "T20:00:00Z", "EEEE, d. MMMM");
   await notifyGroup(
-    `🟣 3SM: reģistrācija atvērta uz ${dateLabel} treniņu (20:00–21:30, ${location}). Piesakies: https://3sm.lv`,
+    `🟣 3SM: reģistrācija atvērta uz ${dateLabel} treniņu (20:00–21:30, ${location}). Piesakies ar vienu klikšķi: https://3sm.lv/?naku=1`,
     "registration_open"
   );
 
